@@ -104,6 +104,55 @@ export function createCityScene(container) {
     const towers = new Map();
     let projectorKey = '';
 
+    const beam = createBeam();
+    beam.visible = false;
+    scene.add(beam);
+    let beamOwner = null;
+    let cancelBeamFade = null;
+
+    function createBeam() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 4;
+        canvas.height = 128;
+        const ctx = canvas.getContext('2d');
+        const gradient = ctx.createLinearGradient(0, 0, 0, 128);
+        gradient.addColorStop(0, 'rgba(0,0,0,1)');
+        gradient.addColorStop(0.6, 'rgba(90,90,90,1)');
+        gradient.addColorStop(1, 'rgba(255,255,255,1)');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, 4, 128);
+        const geometry = new THREE.CylinderGeometry(0.55, 0.95, 70, 32, 1, true);
+        geometry.translate(0, 35, 0);
+        const material = new THREE.MeshBasicMaterial({
+            color: HIGH_COLOR.clone(),
+            alphaMap: new THREE.CanvasTexture(canvas),
+            transparent: true,
+            opacity: 0,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            side: THREE.DoubleSide,
+            fog: false,
+        });
+        return new THREE.Mesh(geometry, material);
+    }
+
+    function moveBeamTo(name) {
+        if (name === beamOwner) return;
+        beamOwner = name;
+        const tower = towers.get(name);
+        if (!tower) return;
+        if (cancelBeamFade) cancelBeamFade();
+        beam.position.copy(tower.group.position);
+        beam.visible = true;
+        beam.material.opacity = 0;
+        cancelBeamFade = animate({
+            duration: 500,
+            onUpdate: (t) => {
+                beam.material.opacity = 0.55 * t;
+            },
+        });
+    }
+
     function createTower(borough, project) {
         const group = new THREE.Group();
         const { x, z } = project(borough);
@@ -220,6 +269,11 @@ export function createCityScene(container) {
                 },
             });
         });
+        updateBeam(ranked);
+    }
+
+    function updateBeam(ranked) {
+        if (ranked.length) moveBeamTo(ranked[0].borough);
     }
 
     function resize() {

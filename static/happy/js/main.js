@@ -1,6 +1,6 @@
 import { createCityScene } from './scene.js';
 import { computeScore, rankBoroughs } from './scoring.js';
-import { initSliders, setSyncStatus } from './ui.js';
+import { initSliders, renderLeaderboard, setSyncStatus } from './ui.js';
 
 const SCORE_TOLERANCE = 0.1;
 
@@ -28,6 +28,11 @@ async function fetchRankings(weights) {
 function render(options) {
     state.ranked = rankBoroughs(state.boroughs, state.weights);
     city.update(state.ranked, options);
+    renderLeaderboard(state.ranked, { onSelect: selectBorough });
+}
+
+function selectBorough(name) {
+    console.info('[HappyBorough] selected', name);
 }
 
 function checkAgainstServer(serverRanked, weights) {

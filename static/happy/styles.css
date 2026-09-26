@@ -168,6 +168,90 @@ input[type=range]:focus-visible { box-shadow: 0 0 0 2px var(--mint); }
 .sync-status[data-state="ok"] { color: #6ee7b7; }
 .sync-status[data-state="warn"] { color: var(--amber); }
 
+.panel-right {
+    top: 76px;
+    right: 24px;
+    bottom: 24px;
+    width: 310px;
+    padding: 20px 12px 12px;
+    display: flex;
+    flex-direction: column;
+}
+
+.panel-right .panel-title,
+.panel-right .panel-sub { padding: 0 8px; }
+.panel-right .panel-sub { margin-bottom: 10px; }
+
+.leaderboard {
+    list-style: none;
+    overflow-y: auto;
+    flex: 1;
+    padding-right: 2px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(148, 163, 184, 0.25) transparent;
+}
+
+.lb-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    margin-bottom: 4px;
+    border-radius: 12px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1), background 0.2s, border-color 0.2s;
+}
+
+.lb-row:hover,
+.lb-row:focus-visible { background: rgba(148, 163, 184, 0.08); outline: none; }
+.lb-row.is-selected { border-color: rgba(52, 245, 197, 0.5); background: rgba(52, 245, 197, 0.07); }
+
+.lb-rank {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    border-radius: 8px;
+    background: rgba(148, 163, 184, 0.1);
+    color: var(--text-dim);
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.lb-row.is-top .lb-rank { background: rgba(52, 245, 197, 0.16); color: var(--mint); }
+.lb-row.is-first .lb-rank {
+    background: var(--mint);
+    color: #042f2e;
+    box-shadow: 0 0 16px rgba(52, 245, 197, 0.6);
+}
+
+.lb-main { flex: 1; min-width: 0; }
+.lb-name { font-size: 0.86rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.lb-score {
+    font-size: 0.95rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-dim);
+}
+
+.lb-row.is-top .lb-score { color: var(--mint); text-shadow: 0 0 12px rgba(52, 245, 197, 0.45); }
+
+.source-tag {
+    display: inline-block;
+    margin-top: 3px;
+    padding: 1px 6px;
+    border-radius: 5px;
+    font-size: 0.66rem;
+    font-weight: 500;
+}
+
+.source-live { background: rgba(16, 185, 129, 0.16); color: #6ee7b7; }
+.source-fallback { background: rgba(245, 158, 11, 0.16); color: var(--amber); }
+
 .loading {
     position: fixed;
     left: 50%;
