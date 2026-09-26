@@ -404,6 +404,83 @@ body.is-ready .panel-right {
     .badge { display: none; }
 }
 
+.tower-tooltip {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    padding: 7px 11px;
+    border-radius: 10px;
+    background: rgba(5, 7, 13, 0.85);
+    border: 1px solid rgba(52, 245, 197, 0.35);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    pointer-events: none;
+    font-size: 0.78rem;
+    white-space: nowrap;
+}
+
+.tower-tooltip[hidden] { display: none; }
+.tower-tooltip span { color: var(--mint); font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* Narrow screens and no-WebGL: scene becomes a banner, panels stack and scroll. */
+@media (max-width: 820px) {
+    html, body { overflow: auto; }
+    body {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding: 46vh 12px 24px;
+    }
+    #scene { height: 46vh; bottom: auto; }
+    .topbar { top: 12px; left: 14px; }
+    .hero { width: 92vw; }
+    body.is-ready .hero { top: 44px; transform: translate(-50%, 0) scale(0.55); }
+    .panel,
+    .panel-left,
+    .panel-right,
+    .detail-card {
+        position: relative;
+        inset: auto;
+        width: auto;
+        transform: none;
+    }
+    .detail-card { order: -1; animation: none; }
+    .panel-right { max-height: none; }
+    .leaderboard { overflow: visible; }
+    .loading { position: fixed; }
+}
+
+body.no-webgl {
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 180px 12px 24px;
+    max-width: 720px;
+    margin: 0 auto;
+}
+
+body.no-webgl #scene { display: none; }
+body.no-webgl .hero { top: 40px; transform: translate(-50%, 0) scale(0.6); }
+body.no-webgl .panel,
+body.no-webgl .detail-card { position: relative; inset: auto; width: auto; transform: none; }
+body.no-webgl .detail-card { order: -1; animation: none; }
+body.no-webgl .leaderboard { overflow: visible; }
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-delay: 0s !important;
+        transition-duration: 0.01ms !important;
+        transition-delay: 0s !important;
+    }
+}
+
 .loading {
     position: fixed;
     left: 50%;

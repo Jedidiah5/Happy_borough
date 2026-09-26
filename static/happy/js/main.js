@@ -93,7 +93,13 @@ async function refreshFromServer(weights) {
 }
 
 async function boot() {
-    city = createCityScene(document.getElementById('scene'), { onSelect: selectBorough });
+    try {
+        city = createCityScene(document.getElementById('scene'), { onSelect: selectBorough });
+    } catch (err) {
+        console.warn('[HappyBorough] 3D scene unavailable, using list-only layout:', err);
+        document.body.classList.add('no-webgl');
+        city = { update() {}, focusOn() {}, resetView() {} };
+    }
     initDetailCard({ onClose: clearSelection });
     state.weights = initSliders({
         onInput: (weights) => {

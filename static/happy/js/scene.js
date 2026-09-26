@@ -245,6 +245,8 @@ export function createCityScene(container, { onSelect } = {}) {
             const targetColor = LOW_COLOR.clone().lerp(HIGH_COLOR, (b.overall_score - min) / range);
             const targetGlow = rank === 0 ? 1.1 : rank < 3 ? 0.8 : 0.18;
 
+            tower.score = b.overall_score;
+            tower.rank = rank;
             tower.labelEl.querySelector('.tl-rank').textContent = `#${rank + 1}`;
             tower.labelEl.classList.toggle('is-top', rank < 3);
             tower.ring.material.opacity = rank < 3 ? 0.6 : 0.2;
@@ -309,6 +311,54 @@ export function createCityScene(container, { onSelect } = {}) {
         if (name && onSelect) onSelect(name);
     });
 
+    const tooltip = document.createElement('div');
+    tooltip.className = 'tower-tooltip';
+    tooltip.hidden = true;
+    tooltip.innerHTML = '<strong></strong><span></span>';
+    document.body.appendChild(tooltip);
+    let hoverEvent = null;
+    let hovered = null;
+
+    renderer.domElement.addEventListener('pointermove', (e) => {
+        hoverEvent = e;
+    });
+    renderer.domElement.addEventListener('pointerleave', () => {
+        hoverEvent = null;
+        setHovered(null);
+    });
+
+    function setHovered(name, event) {
+        if (hovered !== name) {
+            if (hovered && towers.has(hovered)) {
+                const prev = towers.get(hovered).mesh;
+                prev.scale.x = prev.scale.z = 1;
+            }
+            hovered = name;
+            if (name && towers.has(name)) {
+                const mesh = towers.get(name).mesh;
+                mesh.scale.x = mesh.scale.z = 1.18;
+            }
+        }
+        if (!name || !towers.has(name)) {
+            tooltip.hidden = true;
+            renderer.domElement.style.cursor = '';
+            return;
+        }
+        const tower = towers.get(name);
+        tooltip.querySelector('strong').textContent = `#${tower.rank + 1} ${name}`;
+        tooltip.querySelector('span').textContent = `${tower.score.toFixed(1)} / 100`;
+        tooltip.style.transform = `translate(${event.clientX + 14}px, ${event.clientY + 14}px)`;
+        tooltip.hidden = false;
+        renderer.domElement.style.cursor = 'pointer';
+    }
+
+    function processHover() {
+        if (!hoverEvent) return;
+        const event = hoverEvent;
+        hoverEvent = null;
+        setHovered(pointerDown ? null : pickTower(event), event);
+    }
+
     const HOME_POSITION = camera.position.clone();
     const HOME_TARGET = controls.target.clone();
     let cancelCameraTween = null;
@@ -316,6 +366,7 @@ export function createCityScene(container, { onSelect } = {}) {
 
     function flyCamera(toPosition, toTarget, duration = 1100) {
         if (cancelCameraTween) cancelCameraTween();
+        setHovered(null);
         controls.autoRotate = false;
         clearTimeout(resumeTimer);
         const fromPosition = camera.position.clone();
@@ -373,6 +424,7 @@ export function createCityScene(container, { onSelect } = {}) {
 
     function frame(now) {
         tickTweens(now);
+        processHover();
         controls.update();
         composer.render();
         labelRenderer.render(scene, camera);
