@@ -6,13 +6,32 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { animate, tickTweens, easeOutCubic, easeInOutCubic, prefersReducedMotion } from './tween.js';
+import { buildLondonMap, createClouds } from './londonMap.js';
 
 const WORLD_SPAN = 46;
-const HEIGHT_PER_POINT = 0.14;
+const HEIGHT_PER_POINT = 0.115;
 const TOWER_WIDTH = 1.5;
-const BACKGROUND = 0x05070d;
-const LOW_COLOR = new THREE.Color('#3b4fd8');
-const HIGH_COLOR = new THREE.Color('#34f5c5');
+const FOG_COLOR = 0xe4f3f1;
+const LOW_COLOR = new THREE.Color('#5bc8f0');
+const HIGH_COLOR = new THREE.Color('#8cc63f');
+const BEAM_COLOR = new THREE.Color('#ffc93c');
+const INK = 0x3b2a20;
+
+function skyTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 4;
+    canvas.height = 256;
+    const ctx = canvas.getContext('2d');
+    const gradient = ctx.createLinearGradient(0, 0, 0, 256);
+    gradient.addColorStop(0, '#7fd0f5');
+    gradient.addColorStop(0.55, '#c9ecfa');
+    gradient.addColorStop(1, '#fff4e0');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, 4, 256);
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    return texture;
+}
 const AUTO_ROTATE_RESUME_MS = 6000;
 
 function makeProjector(boroughs) {
@@ -30,7 +49,9 @@ export function createCityScene(container, { onSelect } = {}) {
     const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(container.clientWidth, container.clientHeight);
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMapping = THREE.NeutralToneMapping;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     container.appendChild(renderer.domElement);
 
     const labelRenderer = new CSS2DRenderer();
@@ -39,8 +60,8 @@ export function createCityScene(container, { onSelect } = {}) {
     container.appendChild(labelRenderer.domElement);
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(BACKGROUND);
-    scene.fog = new THREE.Fog(BACKGROUND, 45, 130);
+    scene.background = skyTexture();
+    scene.fog = new THREE.Fog(FOG_COLOR, 70, 170);
 
     const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 500);
     camera.position.set(0, 40, 64);
@@ -67,37 +88,35 @@ export function createCityScene(container, { onSelect } = {}) {
         }, AUTO_ROTATE_RESUME_MS);
     });
 
-    scene.add(new THREE.HemisphereLight(0x8fb3ff, 0x05070d, 0.7));
-    const sun = new THREE.DirectionalLight(0xffffff, 1.4);
-    sun.position.set(20, 40, 12);
+    scene.add(new THREE.HemisphereLight(0xdff4ff, 0xd8ecb8, 2.3));
+    const sun = new THREE.DirectionalLight(0xfff1d6, 2.2);
+    sun.position.set(22, 42, 16);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(2048, 2048);
+    Object.assign(sun.shadow.camera, { left: -40, right: 40, top: 40, bottom: -40, near: 1, far: 120 });
+    sun.shadow.bias = -0.0005;
+    sun.shadow.normalBias = 0.02;
     scene.add(sun);
 
-    const ground = new THREE.Mesh(
-        new THREE.PlaneGeometry(400, 400),
-        new THREE.MeshStandardMaterial({ color: 0x080d18, roughness: 1, metalness: 0 })
-    );
-    ground.rotation.x = -Math.PI / 2;
-    scene.add(ground);
-
-    const grid = new THREE.GridHelper(240, 120, 0x1e3a5f, 0x0f1b2d);
-    grid.material.transparent = true;
-    grid.material.opacity = 0.45;
-    grid.position.y = 0.01;
-    scene.add(grid);
+    let londonMap = null;
+    const clouds = createClouds();
+    scene.add(...clouds);
 
     const composer = new EffectComposer(renderer);
     composer.addPass(new RenderPass(scene, camera));
     const bloom = new UnrealBloomPass(
         new THREE.Vector2(container.clientWidth, container.clientHeight),
-        0.55,
-        0.4,
-        0.32
+        0.22,
+        0.35,
+        0.88
     );
     composer.addPass(bloom);
     composer.addPass(new OutputPass());
 
     const towerGeometry = new THREE.BoxGeometry(TOWER_WIDTH, 1, TOWER_WIDTH);
     towerGeometry.translate(0, 0.5, 0);
+    const towerEdges = new THREE.EdgesGeometry(towerGeometry);
+    const towerEdgeMaterial = new THREE.LineBasicMaterial({ color: INK, transparent: true, opacity: 0.75 });
     const ringGeometry = new THREE.RingGeometry(TOWER_WIDTH * 0.85, TOWER_WIDTH * 1.25, 40);
     ringGeometry.rotateX(-Math.PI / 2);
 
@@ -124,11 +143,10 @@ export function createCityScene(container, { onSelect } = {}) {
         const geometry = new THREE.CylinderGeometry(0.55, 0.95, 70, 32, 1, true);
         geometry.translate(0, 35, 0);
         const material = new THREE.MeshBasicMaterial({
-            color: HIGH_COLOR.clone(),
+            color: BEAM_COLOR.clone(),
             alphaMap: new THREE.CanvasTexture(canvas),
             transparent: true,
             opacity: 0,
-            blending: THREE.AdditiveBlending,
             depthWrite: false,
             side: THREE.DoubleSide,
             fog: false,
@@ -163,12 +181,16 @@ export function createCityScene(container, { onSelect } = {}) {
             color: LOW_COLOR.clone(),
             emissive: LOW_COLOR.clone(),
             emissiveIntensity: 0.35,
-            roughness: 0.35,
-            metalness: 0.15,
+            roughness: 0.55,
+            metalness: 0,
         });
         const mesh = new THREE.Mesh(towerGeometry, material);
         mesh.scale.y = 0.001;
         mesh.userData.borough = borough.borough;
+        mesh.castShadow = true;
+        const edges = new THREE.LineSegments(towerEdges, towerEdgeMaterial);
+        edges.raycast = () => {};
+        mesh.add(edges);
         group.add(mesh);
 
         const ring = new THREE.Mesh(
@@ -177,11 +199,10 @@ export function createCityScene(container, { onSelect } = {}) {
                 color: LOW_COLOR.clone(),
                 transparent: true,
                 opacity: 0.25,
-                blending: THREE.AdditiveBlending,
                 depthWrite: false,
             })
         );
-        ring.position.y = 0.02;
+        ring.position.y = 0.05;
         group.add(ring);
 
         const labelEl = document.createElement('div');
@@ -201,6 +222,9 @@ export function createCityScene(container, { onSelect } = {}) {
         if (key === projectorKey) return;
         projectorKey = key;
         const project = makeProjector(boroughs);
+        if (londonMap) scene.remove(londonMap);
+        londonMap = buildLondonMap(boroughs, project);
+        scene.add(londonMap);
         const names = new Set(boroughs.map((b) => b.borough));
         for (const [name, tower] of towers) {
             if (!names.has(name)) {
@@ -243,7 +267,7 @@ export function createCityScene(container, { onSelect } = {}) {
             const tower = towers.get(b.borough);
             const targetHeight = b.overall_score * HEIGHT_PER_POINT;
             const targetColor = LOW_COLOR.clone().lerp(HIGH_COLOR, (b.overall_score - min) / range);
-            const targetGlow = rank === 0 ? 1.1 : rank < 3 ? 0.8 : 0.18;
+            const targetGlow = rank === 0 ? 0.6 : rank < 3 ? 0.4 : 0.18;
 
             tower.score = b.overall_score;
             tower.rank = rank;
@@ -422,7 +446,18 @@ export function createCityScene(container, { onSelect } = {}) {
     }
     new ResizeObserver(resize).observe(container);
 
+    const driftClouds = !prefersReducedMotion();
+    let lastFrame = performance.now();
+
     function frame(now) {
+        const dt = Math.min((now - lastFrame) / 1000, 0.1);
+        lastFrame = now;
+        if (driftClouds) {
+            for (const cloud of clouds) {
+                cloud.position.x += cloud.userData.speed * dt;
+                if (cloud.position.x > 70) cloud.position.x = -70;
+            }
+        }
         tickTweens(now);
         processHover();
         controls.update();
