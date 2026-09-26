@@ -32,6 +32,7 @@ STATIC_TYPES = {
 DEPRIVATION_JSON_PATH = os.path.join(os.path.dirname(__file__), 'data', 'deprivation_borough.json')
 WELLBEING_JSON_PATH = os.path.join(os.path.dirname(__file__), 'data', 'wellbeing_borough.json')
 RENT_JSON_PATH = os.path.join(os.path.dirname(__file__), 'data', 'rent_borough.json')
+GREENSPACE_JSON_PATH = os.path.join(os.path.dirname(__file__), 'data', 'greenspace_borough.json')
 LSOA_GEOJSON_PATH = os.path.join(os.path.dirname(__file__), 'data', 'lsoa_choropleth.json')
 
 # Baseline Police Stats + TfL PTAL benchmarks. Only available for a subset of
@@ -39,7 +40,9 @@ LSOA_GEOJSON_PATH = os.path.join(os.path.dirname(__file__), 'data', 'lsoa_chorop
 # borough is filled in from a London-wide average (see LONDON_AVERAGE),
 # flagged in the API response so the UI can be honest about it. (Real,
 # per-borough ONS well-being data for 32 of 33 boroughs comes from
-# WELLBEING_DATA below instead of this dict -- see build_wellbeing_index.py.)
+# WELLBEING_DATA below instead of this dict -- see build_wellbeing_index.py.
+# Likewise, green_space here is unused -- real per-borough figures for all 33
+# boroughs come from GREENSPACE_DATA instead -- see build_greenspace_index.py.)
 BOROUGH_HAPPINESS_DATA = {
     "Richmond upon Thames": {"safety": 8.8, "green_space": 9.4, "transport": 6.8, "lat": 51.4479, "lng": -0.3260},
     "Wandsworth":           {"safety": 7.8, "green_space": 8.5, "transport": 9.1, "lat": 51.4567, "lng": -0.1910},
@@ -108,6 +111,13 @@ WELLBEING_DATA = load_json_data(WELLBEING_JSON_PATH, "ONS well-being data")
 # data/london_borough_rents_2025.csv.
 RENT_DATA = load_json_data(RENT_JSON_PATH, "borough rent data")
 
+# Real OS Open Greenspace figures for all 33 boroughs (green space area as a
+# % of borough land area, normalized to a 0-10 score), built by
+# build_greenspace_index.py from data/os_greenspace_borough_raw.csv. Replaces
+# the old 12-borough curated/estimated split for green space -- OS's national
+# coverage means every borough gets a genuine, sourced figure here.
+GREENSPACE_DATA = load_json_data(GREENSPACE_JSON_PATH, "OS Open Greenspace data")
+
 # LSOA-level (neighborhood, ~1,500 people) IMD 2025 choropleth geometry for
 # all 4,994 London small areas, built by build_lsoa_choropleth.py. Read once
 # as raw bytes at startup and served as-is by /api/lsoa-geo -- it's just a
@@ -120,14 +130,13 @@ except Exception as e:
     print(f"⚠️ Could not load LSOA choropleth geometry ({LSOA_GEOJSON_PATH}): {e}")
     LSOA_GEOJSON_BYTES = b'{"type":"FeatureCollection","features":[]}'
 
-# London-wide average of the TfL/green-space benchmarks and of the ONS
+# London-wide average of the TfL transport benchmark and of the ONS
 # well-being measures, used as a neutral stand-in for boroughs that don't
 # have their own figure (flagged as "estimated" in the API response so the
 # UI can be honest about it). The City of London's population (~8,000) is
 # too small for ONS to publish a reliable well-being estimate for any
 # measure, so it's the one borough that needs this fallback for happiness.
 LONDON_AVERAGE = {
-    "green_space": round(sum(d["green_space"] for d in BOROUGH_HAPPINESS_DATA.values()) / len(BOROUGH_HAPPINESS_DATA), 2),
     "transport": round(sum(d["transport"] for d in BOROUGH_HAPPINESS_DATA.values()) / len(BOROUGH_HAPPINESS_DATA), 2),
     "wellbeing": {
         measure: round(sum(v for v in values if v is not None) / len([v for v in values if v is not None]), 2)
@@ -140,11 +149,11 @@ LONDON_AVERAGE = {
 def build_borough_registry():
     """
     Full 33-borough registry: starts from IMD 2025 coverage (all London
-    boroughs) and layers the curated TfL/green-space benchmarks, real ONS
-    well-being data, and real rent/affordability data on top -- falling back
-    to a flagged London-wide average for the handful of fields (green space,
-    transport, and the City of London's well-being/rent) that don't have a
-    full 33-borough open data source.
+    boroughs) and layers the curated TfL transport benchmark, real OS Open
+    Greenspace data, real ONS well-being data, and real rent/affordability
+    data on top -- falling back to a flagged London-wide average for the
+    handful of fields (transport, and the City of London's well-being/rent)
+    that don't have a full 33-borough open data source.
     """
     registry = {}
     for name, dep in DEPRIVATION_DATA.items():
@@ -158,19 +167,21 @@ def build_borough_registry():
         if wellbeing is None:
             wellbeing = {**LONDON_AVERAGE["wellbeing"], "latest_year": None, "life_satisfaction_range": [None, None], "trend": {}}
         rent = RENT_DATA.get(name, {})
+        greenspace = GREENSPACE_DATA.get(name, {})
         registry[name] = {
             "lat": coords["lat"],
             "lng": coords["lng"],
             "happiness": wellbeing.get("life_satisfaction"),
             "wellbeing": wellbeing,
             "wellbeing_estimated": wellbeing_estimated,
-            "green_space": curated["green_space"] if curated else LONDON_AVERAGE["green_space"],
+            "green_space": greenspace.get("green_space_score", 5.0),
+            "greenspace": greenspace,
             "transport": curated["transport"] if curated else LONDON_AVERAGE["transport"],
             # Fallback used only if the live Police API call fails: prefer
             # the curated benchmark, otherwise derive one from IMD's Crime
             # domain decile (already on a comparable 1-10, higher-is-safer scale).
             "safety": curated["safety"] if curated else round(crime_decile, 1),
-            "estimated_green_transport": curated is None,
+            "transport_estimated": curated is None,
             "rent": rent,
             "affordability": rent.get("affordability_score", 5.0),
             "deprivation": dep,
@@ -500,11 +511,17 @@ class HappinessHandler(http.server.SimpleHTTPRequestHandler):
                     "borough": b_name,
                     "overall_score": round(score, 1),
                     "ons_happiness": data['happiness'],
-                    "estimated_benchmark": data['estimated_green_transport'],
+                    "transport_estimated": data['transport_estimated'],
                     "safety_score": safety_score,
                     "safety_source": "live_api" if is_live else "benchmark_fallback",
                     "recent_crimes": crime_count,
                     "green_space": data['green_space'],
+                    # OS Open Greenspace (see build_greenspace_index.py):
+                    # green_space_pct is the borough's land area covered by a
+                    # mapped greenspace site; real for all 33 boroughs, so
+                    # never estimated.
+                    "green_space_pct": data['greenspace'].get('green_space_pct'),
+                    "green_space_sites": data['greenspace'].get('site_count'),
                     "transport_score": data['transport'],
                     "housing_apps": housing['total_apps'],
                     "housing_approval_rate": housing['approval_rate'],

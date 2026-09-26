@@ -161,6 +161,11 @@ export function detailCardExtras(b) {
             <strong class="dx-value">£${Math.round(rent.typical_monthly).toLocaleString()}<small>/mo</small></strong>
             ${rent.rent_1bed ? `<span class="dx-sub">1-bed £${Math.round(rent.rent_1bed).toLocaleString()} · 2-bed £${Math.round(rent.rent_2bed || 0).toLocaleString()}</span>` : ''}</div>`);
     }
+    if (b.green_space_pct != null) {
+        cells.push(`<div class="dx-cell"><span class="dx-label">🌳 Green space</span>
+            <strong class="dx-value">${b.green_space_pct}<small>% of land</small></strong>
+            ${b.green_space_sites ? `<span class="dx-sub">${b.green_space_sites.toLocaleString()} mapped parks &amp; open spaces</span>` : ''}</div>`);
+    }
     const wb = b.wellbeing;
     if (wb) {
         const trend = wb.life_satisfaction_trend;

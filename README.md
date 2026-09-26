@@ -59,7 +59,7 @@ HappyBorough combines multiple official UK public sector datasets:
 1. **ONS Personal Well-being Survey (Office for National Statistics)**: Real annual survey data (2011-12 to 2022-23) for Life satisfaction, Happiness, Worthwhile, and Anxiety, scaled 0–10, for 32 of 33 boroughs, aggregated by [`build_wellbeing_index.py`](build_wellbeing_index.py) from [`data/ons_wellbeing_london_boroughs.csv`](data/ons_wellbeing_london_boroughs.csv) into [`data/wellbeing_borough.json`](data/wellbeing_borough.json). The City of London's population (~8,000) is too small for ONS to publish a reliable local estimate for any measure or year, so it falls back to a London-wide average, flagged `estimated` in the API.
 2. **UK Police Open Data (live)**: Live `data.police.uk` street-level crime counts, queried per borough and converted into a 0–10 Safety Score, cached for 1 hour. Falls back to a static benchmark (or the IMD Crime domain decile, for boroughs without one) if the live call fails.
 3. **Transport for London (TfL) PTAL**: Public Transport Accessibility Level scores measuring access to tube, rail, bus, and tram networks (scaled 0–10).
-4. **London Green Spaces & Tree Canopy**: Percentage of municipal area dedicated to public parks, nature reserves, and green infrastructure (scaled 0–10).
+4. **OS Open Greenspace (Ordnance Survey)**: Real per-site park/open-space polygons for all of Great Britain, reduced to the 11,152 sites falling inside a London borough and summed into a green space area, for all 33 boroughs, aggregated by [`build_greenspace_index.py`](build_greenspace_index.py) from [`data/os_greenspace_borough_raw.csv`](data/os_greenspace_borough_raw.csv) into [`data/greenspace_borough.json`](data/greenspace_borough.json). Converted into a 0–10 **Green space score** (green space area as a % of borough land area, min-max normalized: greenest borough = 10, least green = 0).
 5. **Council Planning Portal Dataset (`housing.db`)**: 181,929 historical planning applications (2022–2025) reflecting council development velocity and approval flexibility, for all 33 boroughs.
 6. **English Indices of Deprivation 2025 (MHCLG)**: Official small-area (LSOA) deprivation scores across 7 domains — Income, Employment, Education, Health, Crime, **Barriers to Housing and Services**, and Living Environment — aggregated up to all 33 London boroughs by [`build_deprivation_index.py`](build_deprivation_index.py) (population-weighted mean, source rows in [`data/imd2025_london_lsoa.csv`](data/imd2025_london_lsoa.csv), output in [`data/deprivation_borough.json`](data/deprivation_borough.json)). Deciles run 1 (most deprived 10% in England) to 10 (least deprived), matching the app's existing 0–10 scale.
 7. **GLA "Housing in London 2025" / ONS Price Index of Private Rents**: Average monthly private rent by bedroom count (Sept 2024–Aug 2025) for 32 of 33 boroughs, aggregated by [`build_rent_index.py`](build_rent_index.py) from [`data/london_borough_rents_2025.csv`](data/london_borough_rents_2025.csv) into [`data/rent_borough.json`](data/rent_borough.json). Converted into a 0–10 **Affordability score** (cheapest borough = 10, priciest = 0). ONS doesn't publish a City of London figure either, so it uses the same flagged London-wide average fallback.
@@ -97,6 +97,7 @@ NewSpeak/
 ├── build_deprivation_index.py      # IMD 2025 LSOA -> borough aggregation script
 ├── build_wellbeing_index.py        # ONS well-being time series -> borough aggregation script
 ├── build_rent_index.py             # GLA/ONS borough rents -> affordability score script
+├── build_greenspace_index.py       # OS Open Greenspace sites -> green space % + score script
 ├── build_lsoa_choropleth.py        # LSOA boundaries + centroids + IMD -> neighborhood choropleth script
 ├── housing.db                      # 118MB indexed SQLite database (181,929 applications, Git LFS)
 ├── static/happy/                   # HappyBorough frontend (served at / by happiness_server.py)
@@ -118,6 +119,8 @@ NewSpeak/
 │   ├── wellbeing_borough.json              # Aggregated ONS well-being output, 32 of 33 boroughs
 │   ├── london_borough_rents_2025.csv       # GLA "Housing in London 2025" borough rent table
 │   ├── rent_borough.json                   # Aggregated rent/affordability output, all 33 boroughs
+│   ├── os_greenspace_borough_raw.csv       # OS Open Greenspace, aggregated to London borough area/site counts
+│   ├── greenspace_borough.json             # Green space % + 0-10 score output, all 33 boroughs
 │   ├── lsoa_boundaries_london.geojson      # LSOA polygon boundaries, filtered to London's 4,994 LSOAs
 │   ├── lsoa_pop_centroids_london.geojson   # LSOA population-weighted centroids, same 4,994 LSOAs
 │   └── lsoa_choropleth.json                # Boundaries + centroids + IMD joined, served by /api/lsoa-geo
@@ -188,11 +191,13 @@ GET /api/rankings?w_safety=0.20&w_green=0.20&w_transport=0.15&w_happiness=0.15&w
     "borough": "Richmond upon Thames",
     "overall_score": 82.7,
     "ons_happiness": 7.29,
-    "estimated_benchmark": false,
+    "transport_estimated": false,
     "safety_score": 9.4,
     "safety_source": "live_api",
     "recent_crimes": 280,
-    "green_space": 9.4,
+    "green_space": 10.0,
+    "green_space_pct": 48.6,
+    "green_space_sites": 378,
     "transport_score": 6.8,
     "housing_apps": 4866,
     "housing_approval_rate": 76.6,
@@ -232,10 +237,12 @@ GET /api/rankings?w_safety=0.20&w_green=0.20&w_transport=0.15&w_happiness=0.15&w
     "borough": "City of London",
     "overall_score": 81.7,
     "ons_happiness": 7.36,
-    "estimated_benchmark": true,
+    "transport_estimated": true,
     "safety_score": 9.5,
     "safety_source": "live_api",
-    "green_space": 8.38,
+    "green_space": 0.0,
+    "green_space_pct": 2.66,
+    "green_space_sites": 30,
     "transport_score": 8.11,
     "housing_apps": 0,
     "housing_approval_rate": 75.0,
@@ -268,7 +275,7 @@ GET /api/rankings?w_safety=0.20&w_green=0.20&w_transport=0.15&w_happiness=0.15&w
 ]
 ```
 
-`wellbeing.estimated` and `rent.estimated` are only ever `true` for the City of London: its resident population (~8,000) is too small for ONS to publish either a well-being or a private-rent estimate, so both fall back to a flagged London-wide average.
+`wellbeing.estimated` and `rent.estimated` are only ever `true` for the City of London: its resident population (~8,000) is too small for ONS to publish either a well-being or a private-rent estimate, so both fall back to a flagged London-wide average. `transport_estimated` is `true` for the 21 boroughs without a hand-curated TfL PTAL benchmark, falling back to a London-wide average instead. `green_space`/`green_space_pct`/`green_space_sites` are real (OS Open Greenspace) for all 33 boroughs, so there's no equivalent flag for green space.
 
 ### Get Neighborhood (LSOA) Choropleth Geometry
 

@@ -1,0 +1,233 @@
+{
+  "Barking and Dagenham": {
+    "green_space_pct": 15.02,
+    "green_space_score": 2.69,
+    "greenspace_area_sqm": 5446276.0,
+    "land_area_sqm": 36254489.4,
+    "site_count": 210
+  },
+  "Barnet": {
+    "green_space_pct": 16.47,
+    "green_space_score": 3.01,
+    "greenspace_area_sqm": 14308402.9,
+    "land_area_sqm": 86865503.2,
+    "site_count": 502
+  },
+  "Bexley": {
+    "green_space_pct": 12.95,
+    "green_space_score": 2.24,
+    "greenspace_area_sqm": 7883737.7,
+    "land_area_sqm": 60860919.6,
+    "site_count": 328
+  },
+  "Brent": {
+    "green_space_pct": 12.91,
+    "green_space_score": 2.23,
+    "greenspace_area_sqm": 5610719.3,
+    "land_area_sqm": 43456990.4,
+    "site_count": 288
+  },
+  "Bromley": {
+    "green_space_pct": 12.38,
+    "green_space_score": 2.12,
+    "greenspace_area_sqm": 18601093.0,
+    "land_area_sqm": 150238655.6,
+    "site_count": 543
+  },
+  "Camden": {
+    "green_space_pct": 22.93,
+    "green_space_score": 4.41,
+    "greenspace_area_sqm": 4964514.7,
+    "land_area_sqm": 21648095.4,
+    "site_count": 283
+  },
+  "City of London": {
+    "green_space_pct": 2.66,
+    "green_space_score": 0.0,
+    "greenspace_area_sqm": 78212.2,
+    "land_area_sqm": 2939048.8,
+    "site_count": 30
+  },
+  "Croydon": {
+    "green_space_pct": 17.32,
+    "green_space_score": 3.19,
+    "greenspace_area_sqm": 14941381.8,
+    "land_area_sqm": 86251503.1,
+    "site_count": 402
+  },
+  "Ealing": {
+    "green_space_pct": 17.83,
+    "green_space_score": 3.3,
+    "greenspace_area_sqm": 9882016.8,
+    "land_area_sqm": 55431729.8,
+    "site_count": 501
+  },
+  "Enfield": {
+    "green_space_pct": 15.9,
+    "green_space_score": 2.88,
+    "greenspace_area_sqm": 13079462.4,
+    "land_area_sqm": 82272840.7,
+    "site_count": 418
+  },
+  "Greenwich": {
+    "green_space_pct": 21.55,
+    "green_space_score": 4.11,
+    "greenspace_area_sqm": 10204003.8,
+    "land_area_sqm": 47345739.6,
+    "site_count": 385
+  },
+  "Hackney": {
+    "green_space_pct": 19.29,
+    "green_space_score": 3.62,
+    "greenspace_area_sqm": 3692483.3,
+    "land_area_sqm": 19143959.0,
+    "site_count": 332
+  },
+  "Hammersmith and Fulham": {
+    "green_space_pct": 13.84,
+    "green_space_score": 2.43,
+    "greenspace_area_sqm": 2225285.6,
+    "land_area_sqm": 16081015.8,
+    "site_count": 225
+  },
+  "Haringey": {
+    "green_space_pct": 17.72,
+    "green_space_score": 3.28,
+    "greenspace_area_sqm": 5258030.5,
+    "land_area_sqm": 29665554.7,
+    "site_count": 332
+  },
+  "Harrow": {
+    "green_space_pct": 13.28,
+    "green_space_score": 2.31,
+    "greenspace_area_sqm": 6716216.4,
+    "land_area_sqm": 50579836.8,
+    "site_count": 262
+  },
+  "Havering": {
+    "green_space_pct": 14.53,
+    "green_space_score": 2.58,
+    "greenspace_area_sqm": 16413684.9,
+    "land_area_sqm": 112944417.3,
+    "site_count": 340
+  },
+  "Hillingdon": {
+    "green_space_pct": 11.4,
+    "green_space_score": 1.9,
+    "greenspace_area_sqm": 13188524.5,
+    "land_area_sqm": 115705684.9,
+    "site_count": 453
+  },
+  "Hounslow": {
+    "green_space_pct": 19.46,
+    "green_space_score": 3.66,
+    "greenspace_area_sqm": 10884785.5,
+    "land_area_sqm": 55931415.8,
+    "site_count": 400
+  },
+  "Islington": {
+    "green_space_pct": 6.45,
+    "green_space_score": 0.82,
+    "greenspace_area_sqm": 956924.2,
+    "land_area_sqm": 14841918.9,
+    "site_count": 333
+  },
+  "Kensington and Chelsea": {
+    "green_space_pct": 11.85,
+    "green_space_score": 2.0,
+    "greenspace_area_sqm": 1451646.0,
+    "land_area_sqm": 12248898.7,
+    "site_count": 194
+  },
+  "Kingston upon Thames": {
+    "green_space_pct": 14.96,
+    "green_space_score": 2.68,
+    "greenspace_area_sqm": 5562226.0,
+    "land_area_sqm": 37182152.8,
+    "site_count": 223
+  },
+  "Lambeth": {
+    "green_space_pct": 9.34,
+    "green_space_score": 1.45,
+    "greenspace_area_sqm": 2491046.1,
+    "land_area_sqm": 26679400.0,
+    "site_count": 411
+  },
+  "Lewisham": {
+    "green_space_pct": 13.81,
+    "green_space_score": 2.43,
+    "greenspace_area_sqm": 4862168.3,
+    "land_area_sqm": 35207662.8,
+    "site_count": 365
+  },
+  "Merton": {
+    "green_space_pct": 33.41,
+    "green_space_score": 6.69,
+    "greenspace_area_sqm": 12569674.9,
+    "land_area_sqm": 37626003.2,
+    "site_count": 292
+  },
+  "Newham": {
+    "green_space_pct": 11.21,
+    "green_space_score": 1.86,
+    "greenspace_area_sqm": 4120768.9,
+    "land_area_sqm": 36750046.7,
+    "site_count": 344
+  },
+  "Redbridge": {
+    "green_space_pct": 32.99,
+    "green_space_score": 6.6,
+    "greenspace_area_sqm": 18569982.3,
+    "land_area_sqm": 56293398.0,
+    "site_count": 280
+  },
+  "Richmond upon Thames": {
+    "green_space_pct": 48.6,
+    "green_space_score": 10.0,
+    "greenspace_area_sqm": 27786744.5,
+    "land_area_sqm": 57173938.4,
+    "site_count": 378
+  },
+  "Southwark": {
+    "green_space_pct": 17.69,
+    "green_space_score": 3.27,
+    "greenspace_area_sqm": 5090594.6,
+    "land_area_sqm": 28770427.9,
+    "site_count": 556
+  },
+  "Sutton": {
+    "green_space_pct": 17.75,
+    "green_space_score": 3.28,
+    "greenspace_area_sqm": 7806591.5,
+    "land_area_sqm": 43990273.7,
+    "site_count": 304
+  },
+  "Tower Hamlets": {
+    "green_space_pct": 13.06,
+    "green_space_score": 2.26,
+    "greenspace_area_sqm": 2597909.0,
+    "land_area_sqm": 19887189.8,
+    "site_count": 416
+  },
+  "Waltham Forest": {
+    "green_space_pct": 10.42,
+    "green_space_score": 1.69,
+    "greenspace_area_sqm": 4027364.0,
+    "land_area_sqm": 38653453.1,
+    "site_count": 278
+  },
+  "Wandsworth": {
+    "green_space_pct": 23.17,
+    "green_space_score": 4.46,
+    "greenspace_area_sqm": 7952981.3,
+    "land_area_sqm": 34321952.4,
+    "site_count": 314
+  },
+  "Westminster": {
+    "green_space_pct": 23.81,
+    "green_space_score": 4.6,
+    "greenspace_area_sqm": 5095308.8,
+    "land_area_sqm": 21404071.1,
+    "site_count": 230
+  }
+}
