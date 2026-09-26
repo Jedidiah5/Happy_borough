@@ -6,7 +6,7 @@ import urllib.parse
 import os
 import math
 
-PORT = 8080
+PORT = int(os.environ.get('PORT', 8080))
 DB_PATH = 'housing.db'
 
 def load_env():
@@ -26,13 +26,17 @@ def load_env():
 load_env()
 
 def query_db(query, params=()):
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    c = conn.cursor()
-    c.execute(query, params)
-    rows = [dict(r) for r in c.fetchall()]
-    conn.close()
-    return rows
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        c = conn.cursor()
+        c.execute(query, params)
+        rows = [dict(r) for r in c.fetchall()]
+        conn.close()
+        return rows
+    except Exception as e:
+        print(f"Database query note: {e}")
+        return []
 
 class PlanPulseHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):

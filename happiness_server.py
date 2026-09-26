@@ -5,7 +5,7 @@ import urllib.parse
 import sqlite3
 import os
 
-PORT = 8085
+PORT = int(os.environ.get('PORT', 8085))
 DB_PATH = 'housing.db'
 
 # Official UK Open Data benchmarks (ONS Well-being Survey + UK Police Open Data + TfL PTAL)
@@ -27,21 +27,24 @@ BOROUGH_HAPPINESS_DATA = {
 def get_housing_metrics(borough_name):
     if not os.path.exists(DB_PATH):
         return {"total_apps": 5000, "approval_rate": 80.0}
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute('''
-        SELECT COUNT(*) as total,
-               SUM(CASE WHEN status IN ('Permitted', 'Conditions') THEN 1 ELSE 0 END) as permitted
-        FROM applications
-        WHERE LOWER(area_name) LIKE LOWER(?)
-    ''', (f"%{borough_name}%",))
-    row = c.fetchone()
-    conn.close()
-    if row and row[0] > 0:
-        return {
-            "total_apps": row[0],
-            "approval_rate": round((row[1] / row[0]) * 100, 1)
-        }
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute('''
+            SELECT COUNT(*) as total,
+                   SUM(CASE WHEN status IN ('Permitted', 'Conditions') THEN 1 ELSE 0 END) as permitted
+            FROM applications
+            WHERE LOWER(area_name) LIKE LOWER(?)
+        ''', (f"%{borough_name}%",))
+        row = c.fetchone()
+        conn.close()
+        if row and row[0] > 0:
+            return {
+                "total_apps": row[0],
+                "approval_rate": round((row[1] / row[0]) * 100, 1)
+            }
+    except Exception as e:
+        print(f"Housing metrics query note: {e}")
     return {"total_apps": 0, "approval_rate": 75.0}
 
 class HappinessHandler(http.server.SimpleHTTPRequestHandler):
