@@ -39,9 +39,11 @@ html, body {
 
 #scene canvas { display: block; }
 
+/* CSS2DRenderer z-indexes every label; the stacking context keeps them under the UI. */
 .label-layer {
     position: absolute;
     inset: 0;
+    z-index: 0;
     pointer-events: none;
 }
 
