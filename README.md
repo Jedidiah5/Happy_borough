@@ -43,7 +43,6 @@ By combining well-being surveys, crime statistics, public transport accessibilit
 
 ### 🗂️ Borough Detail Card
 - Six animated bars, one per factor: safety, green space, transport, wellbeing, housing access and affordability.
-- Council planning approval rate and application count from `housing.db` (or "No planning data" when there are none).
 - Typical monthly rent (with 1-bed and 2-bed figures), green space % of land with mapped site count, ONS life satisfaction with its trend, anxiety and "worthwhile" scores, and IMD 2025 deprivation deciles. Values that are estimated are tagged "est.".
 
 ### 🔬 Neighborhood-Level Data (API-ready)

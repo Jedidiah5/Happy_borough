@@ -459,16 +459,6 @@ input[type=range]:focus-visible { box-shadow: 0 0 0 3px var(--blue-soft), 0 0 0 
 .bar:nth-child(5) .bar-fill { transition-delay: 0.24s; }
 .bar:nth-child(6) .bar-fill { transition-delay: 0.30s; }
 
-.detail-housing {
-    padding-top: 10px;
-    border-top: 1.5px dashed var(--line);
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: var(--ink-soft);
-}
-
-.detail-housing strong { color: var(--ink); font-weight: 900; }
-
 #sliders .slider-group { margin-bottom: 10px; }
 
 .detail-extras:empty { display: none; }

@@ -160,9 +160,6 @@ export function showDetail(b, rank, { opening = false } = {}) {
     document.getElementById('detail-rank').textContent = `#${rank + 1} · score ${b.overall_score.toFixed(1)} / 100`;
     document.getElementById('detail-name').textContent = b.borough;
     document.getElementById('detail-source').innerHTML = sourceTagHtml(b);
-    document.getElementById('detail-housing').innerHTML = b.housing_apps > 0
-        ? `🏗️ <strong>${b.housing_approval_rate}%</strong> planning approval · ${b.housing_apps.toLocaleString()} applications`
-        : '🏗️ No planning data';
     document.getElementById('detail-extras').innerHTML = detailCardExtras(b);
 
     const factorByKey = new Map(FACTORS.map((f) => [f.key, f]));
