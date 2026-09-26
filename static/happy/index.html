@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>HappyBorough London — Legal Neighborhood Vibe & Happiness Index</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/happy/styles.css">
+</head>
+<body>
+    <header>
+        <div class="logo">
+            😊 HappyBorough London
+            <span class="badge">🛡️ Live UK Police API + ONS Data Fusion</span>
+        </div>
+        <div style="font-size: 0.85rem; color: #94A3B8;">ONS Well-being + UK Police Open Data + TfL PTAL + 181k Council Applications</div>
+    </header>
+
+    <div class="container">
+        <div class="sidebar">
+            <div class="card">
+                <h3 style="font-size: 0.9rem; color: #38BDF8; margin-bottom: 1rem; text-transform: uppercase;">🎛️ Customize Your Happiness Priorities</h3>
+                <div class="slider-group">
+                    <div class="slider-label"><span>🛡️ Safety (Live Police API)</span><strong id="v-safety">30%</strong></div>
+                    <input type="range" id="w-safety" min="0" max="100" value="30" oninput="updateRankings()">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label"><span>🌳 Parks & Green Space</span><strong id="v-green">30%</strong></div>
+                    <input type="range" id="w-green" min="0" max="100" value="30" oninput="updateRankings()">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label"><span>🚆 Transport Accessibility</span><strong id="v-transport">20%</strong></div>
+                    <input type="range" id="w-transport" min="0" max="100" value="20" oninput="updateRankings()">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label"><span>😊 ONS Community Satisfaction</span><strong id="v-happiness">20%</strong></div>
+                    <input type="range" id="w-happiness" min="0" max="100" value="20" oninput="updateRankings()">
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="font-size: 0.9rem; color: #10B981; margin-bottom: 0.8rem; text-transform: uppercase;">🏆 Top Matched Boroughs</h3>
+                <div id="rankings-list">Loading legal open data rankings...</div>
+            </div>
+        </div>
+
+        <div id="map"></div>
+    </div>
+
+    <script src="/static/happy/app.js"></script>
+</body>
+</html>

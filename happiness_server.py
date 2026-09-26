@@ -7,9 +7,19 @@ import sqlite3
 import os
 import time
 import threading
+import mimetypes
 
 PORT = int(os.environ.get('PORT', 8085))
 DB_PATH = 'housing.db'
+STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
+# Explicit types: Windows registry can map .js to text/plain.
+STATIC_TYPES = {
+    '.html': 'text/html; charset=utf-8',
+    '.css': 'text/css; charset=utf-8',
+    '.js': 'application/javascript; charset=utf-8',
+    '.json': 'application/json; charset=utf-8',
+    '.svg': 'image/svg+xml',
+}
 
 # Official UK Open Data benchmarks (ONS Well-being Survey + Baseline Police Stats + TfL PTAL)
 BOROUGH_HAPPINESS_DATA = {
@@ -143,12 +153,29 @@ class HappinessHandler(http.server.SimpleHTTPRequestHandler):
             rankings.sort(key=lambda x: x['overall_score'], reverse=True)
             self.send_json(rankings)
         elif parsed.path == '/' or parsed.path == '/index.html':
-            self.send_response(200)
-            self.send_header('Content-type', 'text/html; charset=utf-8')
-            self.end_headers()
-            self.wfile.write(HTML_UI.encode('utf-8'))
+            self.send_static_file(os.path.join(STATIC_DIR, 'happy', 'index.html'))
+        elif parsed.path.startswith('/static/'):
+            rel_path = urllib.parse.unquote(parsed.path[len('/static/'):])
+            self.send_static_file(os.path.join(STATIC_DIR, rel_path))
         else:
             self.send_error(404)
+
+    def send_static_file(self, file_path):
+        static_root = os.path.realpath(STATIC_DIR)
+        full_path = os.path.realpath(file_path)
+        if not full_path.startswith(static_root + os.sep) or not os.path.isfile(full_path):
+            self.send_error(404)
+            return
+        ext = os.path.splitext(full_path)[1].lower()
+        ctype = STATIC_TYPES.get(ext) or mimetypes.guess_type(full_path)[0] or 'application/octet-stream'
+        with open(full_path, 'rb') as f:
+            data = f.read()
+        self.send_response(200)
+        self.send_header('Content-type', ctype)
+        self.send_header('Content-Length', str(len(data)))
+        self.send_header('Cache-Control', 'no-cache')
+        self.end_headers()
+        self.wfile.write(data)
 
     def send_json(self, data):
         self.send_response(200)
@@ -157,146 +184,11 @@ class HappinessHandler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(json.dumps(data).encode('utf-8'))
 
-HTML_UI = """<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>HappyBorough London — Legal Neighborhood Vibe & Happiness Index</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
-        body { background: #0F172A; color: #F8FAFC; height: 100vh; display: flex; flex-direction: column; }
-        header { background: #1E293B; padding: 1rem 2rem; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
-        .logo { font-size: 1.3rem; font-weight: 700; color: #10B981; display: flex; align-items: center; gap: 8px; }
-        .badge { background: #065F46; color: #34D399; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; }
-        .container { display: grid; grid-template-columns: 390px 1fr; flex: 1; overflow: hidden; }
-        .sidebar { background: #1E293B; padding: 1.5rem; border-right: 1px solid #334155; overflow-y: auto; display: flex; flex-direction: column; gap: 1.2rem; }
-        .card { background: #0F172A; border: 1px solid #334155; border-radius: 10px; padding: 1.2rem; }
-        .slider-group { margin-bottom: 1rem; }
-        .slider-label { display: flex; justify-content: space-between; font-size: 0.8rem; color: #CBD5E1; margin-bottom: 0.3rem; }
-        input[type=range] { width: 100%; accent-color: #10B981; cursor: pointer; }
-        #map { height: 100%; width: 100%; }
-        .borough-item { padding: 0.85rem; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: background 0.15s; }
-        .borough-item:hover { background: #1E293B; }
-        .score-pill { background: #10B981; color: #064E3B; font-weight: 800; padding: 4px 10px; border-radius: 12px; font-size: 0.9rem; }
-        .source-tag { font-size: 0.68rem; padding: 1px 5px; border-radius: 4px; display: inline-block; margin-top: 3px; }
-        .source-live { background: rgba(16, 185, 129, 0.2); color: #34D399; }
-        .source-fallback { background: rgba(245, 158, 11, 0.2); color: #FBBF24; }
-    </style>
-</head>
-<body>
-    <header>
-        <div class="logo">
-            😊 HappyBorough London
-            <span class="badge">🛡️ Live UK Police API + ONS Data Fusion</span>
-        </div>
-        <div style="font-size: 0.85rem; color: #94A3B8;">ONS Well-being + UK Police Open Data + TfL PTAL + 181k Council Applications</div>
-    </header>
-
-    <div class="container">
-        <div class="sidebar">
-            <div class="card">
-                <h3 style="font-size: 0.9rem; color: #38BDF8; margin-bottom: 1rem; text-transform: uppercase;">🎛️ Customize Your Happiness Priorities</h3>
-                <div class="slider-group">
-                    <div class="slider-label"><span>🛡️ Safety (Live Police API)</span><strong id="v-safety">30%</strong></div>
-                    <input type="range" id="w-safety" min="0" max="100" value="30" oninput="updateRankings()">
-                </div>
-                <div class="slider-group">
-                    <div class="slider-label"><span>🌳 Parks & Green Space</span><strong id="v-green">30%</strong></div>
-                    <input type="range" id="w-green" min="0" max="100" value="30" oninput="updateRankings()">
-                </div>
-                <div class="slider-group">
-                    <div class="slider-label"><span>🚆 Transport Accessibility</span><strong id="v-transport">20%</strong></div>
-                    <input type="range" id="w-transport" min="0" max="100" value="20" oninput="updateRankings()">
-                </div>
-                <div class="slider-group">
-                    <div class="slider-label"><span>😊 ONS Community Satisfaction</span><strong id="v-happiness">20%</strong></div>
-                    <input type="range" id="w-happiness" min="0" max="100" value="20" oninput="updateRankings()">
-                </div>
-            </div>
-
-            <div class="card">
-                <h3 style="font-size: 0.9rem; color: #10B981; margin-bottom: 0.8rem; text-transform: uppercase;">🏆 Top Matched Boroughs</h3>
-                <div id="rankings-list">Loading legal open data rankings...</div>
-            </div>
-        </div>
-
-        <div id="map"></div>
-    </div>
-
-    <script>
-        let map = L.map('map').setView([51.5074, -0.1278], 11);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
-        let markersGroup = L.layerGroup().addTo(map);
-
-        async function updateRankings() {
-            const s = parseInt(document.getElementById('w-safety').value);
-            const g = parseInt(document.getElementById('w-green').value);
-            const t = parseInt(document.getElementById('w-transport').value);
-            const h = parseInt(document.getElementById('w-happiness').value);
-            const total = s + g + t + h || 1;
-
-            document.getElementById('v-safety').innerText = Math.round((s/total)*100) + '%';
-            document.getElementById('v-green').innerText = Math.round((g/total)*100) + '%';
-            document.getElementById('v-transport').innerText = Math.round((t/total)*100) + '%';
-            document.getElementById('v-happiness').innerText = Math.round((h/total)*100) + '%';
-
-            const res = await fetch(`/api/rankings?w_safety=${s/total}&w_green=${g/total}&w_transport=${t/total}&w_happiness=${h/total}`);
-            const data = await res.json();
-
-            markersGroup.clearLayers();
-            const listEl = document.getElementById('rankings-list');
-            listEl.innerHTML = '';
-
-            data.forEach((b, idx) => {
-                const isLive = b.safety_source === 'live_api';
-                const crimeDetail = b.recent_crimes !== null ? `(${b.recent_crimes} crimes reported this month)` : '(Benchmark fallback)';
-                
-                L.circleMarker([b.lat, b.lng], {
-                    radius: 10 + (10 - idx),
-                    fillColor: idx === 0 ? '#10B981' : (idx < 3 ? '#38BDF8' : '#F59E0B'),
-                    color: '#FFFFFF',
-                    weight: 2,
-                    fillOpacity: 0.85
-                }).bindPopup(`
-                    <strong style="font-size: 1rem;">${b.borough}</strong><br/>
-                    <b>Happiness Score:</b> ${b.overall_score}/100<br/>
-                    🛡️ Safety: <b>${b.safety_score}/10</b> <small>${crimeDetail}</small><br/>
-                    🌳 Green: ${b.green_space}/10 | 🚆 Transport: ${b.transport_score}/10<br/>
-                    😊 ONS Happiness Rating: ${b.ons_happiness}/10<br/>
-                    🏗️ Housing Approval Rate: ${b.housing_approval_rate}% (${b.housing_apps.toLocaleString()} apps)
-                `).addTo(markersGroup);
-
-                const item = document.createElement('div');
-                item.className = 'borough-item';
-                item.onclick = () => map.flyTo([b.lat, b.lng], 13);
-                item.innerHTML = `
-                    <div>
-                        <div style="font-weight: 600; font-size: 0.9rem;">#${idx+1} ${b.borough}</div>
-                        <div style="font-size: 0.73rem; color: #94A3B8;">
-                            🛡️ Safety ${b.safety_score} · 🌳 Green ${b.green_space} · 🚆 Transit ${b.transport_score}
-                        </div>
-                        <span class="source-tag ${isLive ? 'source-live' : 'source-fallback'}">
-                            ${isLive ? `● Live Police API (${b.recent_crimes} crimes)` : '○ Benchmark Fallback'}
-                        </span>
-                    </div>
-                    <div class="score-pill">${b.overall_score}</div>
-                `;
-                listEl.appendChild(item);
-            });
-        }
-
-        updateRankings();
-    </script>
-</body>
-</html>
-"""
-
 if __name__ == "__main__":
     warm_police_cache_async()
-    server = socketserver.TCPServer(("", PORT), HappinessHandler)
+    socketserver.ThreadingTCPServer.allow_reuse_address = True
+    socketserver.ThreadingTCPServer.daemon_threads = True
+    server = socketserver.ThreadingTCPServer(("", PORT), HappinessHandler)
     print(f"😊 HappyBorough Server running with Live UK Police API at http://localhost:{PORT}")
     try:
         server.serve_forever()
