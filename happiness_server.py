@@ -284,23 +284,29 @@ def calculate_distance_km(lat1, lng1, lat2, lng2):
     return round(R * c, 2)
 
 def find_closest_borough(lat, lng):
-    """Find the closest tracked London borough from given coordinates."""
+    """Find the closest of all 33 tracked London boroughs to given coordinates."""
     closest = None
     min_dist = float('inf')
-    for b_name, b_data in BOROUGH_HAPPINESS_DATA.items():
+    for b_name, b_data in BOROUGH_REGISTRY.items():
         dist = calculate_distance_km(lat, lng, b_data['lat'], b_data['lng'])
         if dist < min_dist:
             min_dist = dist
-            closest = (b_name, b_data, dist)
+            closest = (b_name, dist)
     return closest
 
 def geocode_search(query):
     """
-    Geocode an area or postcode search query:
+    Geocode an area or postcode search query to the closest of the 33
+    tracked London boroughs:
     1. Direct match on tracked London borough names
     2. UK Postcode or Outcode via api.postcodes.io
     3. London Wards & Neighborhoods via housing.db applications
     4. Nominatim OpenStreetMap fallback for landmarks
+
+    Only returns match/location info, not borough metrics -- the frontend
+    already has every borough's full, real metric set from /api/rankings, so
+    it looks up result['borough'] there instead of this endpoint duplicating
+    (and risking staling) those scores.
     """
     query = query.strip()
     if not query:
@@ -309,7 +315,7 @@ def geocode_search(query):
     q_lower = query.lower()
 
     # 1. Direct Borough Name Match
-    for b_name, data in BOROUGH_HAPPINESS_DATA.items():
+    for b_name, data in BOROUGH_REGISTRY.items():
         if q_lower == b_name.lower() or (len(q_lower) >= 3 and q_lower in b_name.lower()):
             return {
                 "found": True,
@@ -321,10 +327,6 @@ def geocode_search(query):
                 "lat": data["lat"],
                 "lng": data["lng"],
                 "distance_km": 0.0,
-                "happiness": data["happiness"],
-                "safety": data["safety"],
-                "green_space": data["green_space"],
-                "transport": data["transport"]
             }
 
     # 2. UK Postcode or Outcode Lookup via api.postcodes.io
@@ -349,11 +351,7 @@ def geocode_search(query):
                     "district": distr,
                     "lat": lat,
                     "lng": lng,
-                    "distance_km": closest[2] if closest else 0.0,
-                    "happiness": closest[1]['happiness'] if closest else 7.0,
-                    "safety": closest[1]['safety'] if closest else 7.0,
-                    "green_space": closest[1]['green_space'] if closest else 7.0,
-                    "transport": closest[1]['transport'] if closest else 7.0
+                    "distance_km": closest[1] if closest else 0.0,
                 }
     except Exception:
         pass
@@ -379,11 +377,7 @@ def geocode_search(query):
                     "district": distr_str,
                     "lat": lat,
                     "lng": lng,
-                    "distance_km": closest[2] if closest else 0.0,
-                    "happiness": closest[1]['happiness'] if closest else 7.0,
-                    "safety": closest[1]['safety'] if closest else 7.0,
-                    "green_space": closest[1]['green_space'] if closest else 7.0,
-                    "transport": closest[1]['transport'] if closest else 7.0
+                    "distance_km": closest[1] if closest else 0.0,
                 }
     except Exception:
         pass
@@ -417,11 +411,7 @@ def geocode_search(query):
                     "district": area_name,
                     "lat": round(lat, 5),
                     "lng": round(lng, 5),
-                    "distance_km": closest[2] if closest else 0.0,
-                    "happiness": closest[1]['happiness'] if closest else 7.0,
-                    "safety": closest[1]['safety'] if closest else 7.0,
-                    "green_space": closest[1]['green_space'] if closest else 7.0,
-                    "transport": closest[1]['transport'] if closest else 7.0
+                    "distance_km": closest[1] if closest else 0.0,
                 }
         except Exception as e:
             print(f"DB geocode lookup note: {e}")
@@ -447,11 +437,7 @@ def geocode_search(query):
                     "district": "London",
                     "lat": round(lat, 5),
                     "lng": round(lng, 5),
-                    "distance_km": closest[2] if closest else 0.0,
-                    "happiness": closest[1]['happiness'] if closest else 7.0,
-                    "safety": closest[1]['safety'] if closest else 7.0,
-                    "green_space": closest[1]['green_space'] if closest else 7.0,
-                    "transport": closest[1]['transport'] if closest else 7.0
+                    "distance_km": closest[1] if closest else 0.0,
                 }
     except Exception:
         pass

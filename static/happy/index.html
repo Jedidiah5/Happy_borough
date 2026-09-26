@@ -49,6 +49,15 @@
         <button type="button" class="chip is-on" id="toggle-leaderboard" aria-pressed="true">🏆 Leaderboard</button>
     </nav>
 
+    <div class="search-wrap">
+        <form class="search-bar" id="search-form" role="search" aria-label="Search a postcode, address or borough">
+            <span class="search-icon" aria-hidden="true">🔍</span>
+            <input type="text" id="search-input" class="search-input" placeholder="Search a postcode, address or borough…" autocomplete="off" aria-label="Postcode, address or borough">
+            <button type="button" class="search-clear" id="search-clear" hidden aria-label="Clear search">✕</button>
+        </form>
+        <div class="search-feedback" id="search-feedback" hidden role="status" aria-live="polite"></div>
+    </div>
+
     <aside class="panel panel-left" id="controls">
         <h2 class="panel-title">Your priorities</h2>
         <p class="panel-sub">Drag to re-rank London instantly</p>

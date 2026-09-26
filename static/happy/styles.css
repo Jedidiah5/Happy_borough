@@ -589,6 +589,84 @@ body.is-ready .toolbar { opacity: 1; }
 .seg button:focus-visible,
 .chip:focus-visible { outline: 3px solid var(--blue); outline-offset: 1px; }
 
+.search-wrap {
+    position: fixed;
+    top: 128px;
+    left: 50%;
+    z-index: 12;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: min(420px, calc(100vw - 700px));
+    transform: translateX(-50%);
+    opacity: 0;
+    transition: opacity 0.6s 0.8s;
+}
+
+body.is-ready .search-wrap { opacity: 1; }
+
+.search-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 6px 8px 6px 14px;
+    border-radius: 999px;
+    background: var(--paper-solid);
+    border: 2px solid var(--ink);
+    box-shadow: 0 3px 0 rgba(59, 42, 32, 0.18);
+}
+
+.search-icon { font-size: 0.9rem; opacity: 0.7; }
+
+.search-input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    font: inherit;
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: var(--ink);
+}
+
+.search-input::placeholder { color: var(--ink-faint); font-weight: 600; }
+.search-input:focus { outline: none; }
+
+.search-clear {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    border: 0;
+    border-radius: 50%;
+    background: var(--blue-soft);
+    color: var(--ink-soft);
+    font-size: 0.75rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+
+.search-clear:hover { background: var(--blush); color: var(--ink); }
+
+.search-feedback {
+    max-width: 100%;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: var(--paper-solid);
+    border: 1.5px solid var(--line);
+    color: var(--ink-soft);
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-align: center;
+    box-shadow: 0 2px 0 rgba(59, 42, 32, 0.12);
+}
+
+.search-feedback.is-searching { color: var(--ink-soft); }
+.search-feedback.is-success { border-color: var(--green-deep); background: var(--green-soft); color: var(--ink); }
+.search-feedback.is-error { border-color: var(--blush); background: #fff0f5; color: var(--ink); }
+
 body.leaderboard-hidden .panel-right {
     opacity: 0;
     transform: translateX(24px);
@@ -671,6 +749,7 @@ body.mode-map .hero h1 { text-shadow: 0 2px 0 #fff, 0 0 18px #fff, 0 0 30px #fff
     }
     .detail-card { order: -1; animation: none; }
     .toolbar { position: relative; top: auto; left: auto; max-width: none; transform: none; }
+    .search-wrap { position: relative; top: auto; left: auto; width: 100%; transform: none; }
     #flatmap { height: 46vh; bottom: auto; }
     .panel-right { max-height: none; }
     .leaderboard { overflow: visible; }

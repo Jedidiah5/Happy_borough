@@ -1,5 +1,6 @@
 import { createCityScene } from './scene.js';
 import { createFlatMap } from './flatMap.js';
+import { initSearch } from './search.js';
 import { FACTORS, computeScore, rankBoroughs } from './scoring.js';
 import {
     hideDetail,
@@ -171,6 +172,13 @@ async function boot() {
     flatMap = createFlatMap(document.getElementById('flatmap'), { onSelect: selectBorough });
     initToolbar();
     initDetailCard({ onClose: clearSelection });
+    initSearch({
+        isReady: () => state.ranked.length > 0,
+        onResolved: (result) => {
+            if (state.ranked.some((b) => b.borough === result.borough)) selectBorough(result.borough);
+        },
+        onClear: clearSelection,
+    });
     state.weights = initSliders({
         onInput: (weights) => {
             state.weights = weights;
