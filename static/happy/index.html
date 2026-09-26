@@ -2,72 +2,62 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HappyBorough London — Legal Neighborhood Vibe & Happiness Index</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/happy/styles.css">
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+        }
+    }
+    </script>
 </head>
 <body>
-    <header>
-        <div class="logo">
-            😊 HappyBorough London
-            <span class="badge">🛡️ Live UK Police API + ONS Data Fusion</span>
-        </div>
-        <div style="font-size: 0.85rem; color: #94A3B8;">ONS Well-being + UK Police Open Data + TfL PTAL + 181k Council Applications</div>
+    <div id="scene" aria-hidden="true"></div>
+
+    <header class="topbar">
+        <div class="logo">😊 HappyBorough <span>London</span></div>
+        <div class="badge">🛡️ Live UK Police API + ONS Data Fusion</div>
     </header>
 
-    <div class="container">
-        <div class="sidebar">
-            <div class="card search-card">
-                <div class="search-header">
-                    <span class="search-title">📍 Search Area or Postcode</span>
-                    <span class="search-badge">Live Geocoder</span>
-                </div>
-                <div class="search-box">
-                    <input type="text" id="search-input" placeholder="e.g. Richmond, SW1A 1AA, CR0, Wimbledon..." autocomplete="off">
-                    <button id="search-clear-btn" class="search-icon-btn" title="Clear" style="display: none;">✕</button>
-                    <button id="search-btn" class="search-submit-btn">Search</button>
-                </div>
-                <div class="search-chips">
-                    <span class="chip-label">Try:</span>
-                    <button type="button" class="search-chip" onclick="quickSearch('Richmond')">Richmond</button>
-                    <button type="button" class="search-chip" onclick="quickSearch('SW1A 1AA')">SW1A 1AA</button>
-                    <button type="button" class="search-chip" onclick="quickSearch('CR0')">CR0</button>
-                    <button type="button" class="search-chip" onclick="quickSearch('Camden')">Camden</button>
-                </div>
-                <div id="search-feedback" class="search-feedback" style="display: none;"></div>
-            </div>
-
-            <div class="card">
-                <h3 style="font-size: 0.9rem; color: #38BDF8; margin-bottom: 1rem; text-transform: uppercase;">🎛️ Customize Your Happiness Priorities</h3>
-                <div class="slider-group">
-                    <div class="slider-label"><span>🛡️ Safety (Live Police API)</span><strong id="v-safety">30%</strong></div>
-                    <input type="range" id="w-safety" min="0" max="100" value="30" oninput="updateRankings()">
-                </div>
-                <div class="slider-group">
-                    <div class="slider-label"><span>🌳 Parks & Green Space</span><strong id="v-green">30%</strong></div>
-                    <input type="range" id="w-green" min="0" max="100" value="30" oninput="updateRankings()">
-                </div>
-                <div class="slider-group">
-                    <div class="slider-label"><span>🚆 Transport Accessibility</span><strong id="v-transport">20%</strong></div>
-                    <input type="range" id="w-transport" min="0" max="100" value="20" oninput="updateRankings()">
-                </div>
-                <div class="slider-group">
-                    <div class="slider-label"><span>😊 ONS Community Satisfaction</span><strong id="v-happiness">20%</strong></div>
-                    <input type="range" id="w-happiness" min="0" max="100" value="20" oninput="updateRankings()">
-                </div>
-            </div>
-
-            <div class="card">
-                <h3 style="font-size: 0.9rem; color: #10B981; margin-bottom: 0.8rem; text-transform: uppercase;">🏆 Top Matched Boroughs</h3>
-                <div id="rankings-list">Loading legal open data rankings...</div>
-            </div>
-        </div>
-
-        <div id="map"></div>
+    <div class="hero">
+        <h1>Where in London would you be <em>happiest</em>?</h1>
+        <p>Weigh safety, green space, transport, wellbeing, housing access and rent. Every borough re-ranks live.</p>
     </div>
 
-    <script src="/static/happy/app.js"></script>
+    <aside class="panel panel-left" id="controls">
+        <h2 class="panel-title">Your priorities</h2>
+        <p class="panel-sub">Drag to re-rank London instantly</p>
+        <div id="sliders"></div>
+        <div class="sync-status" id="sync-status"></div>
+    </aside>
+
+    <aside class="panel panel-right">
+        <h2 class="panel-title">🏆 Leaderboard</h2>
+        <p class="panel-sub" id="leaderboard-sub">Ranked by your priorities</p>
+        <ol class="leaderboard" id="leaderboard"></ol>
+    </aside>
+
+    <section class="panel detail-card" id="detail" hidden aria-live="polite">
+        <button class="detail-back" id="detail-back" type="button">← Back to overview</button>
+        <div class="detail-rank" id="detail-rank"></div>
+        <h3 class="detail-name" id="detail-name"></h3>
+        <div id="detail-source"></div>
+        <div class="bars" id="detail-bars"></div>
+        <div class="detail-housing" id="detail-housing"></div>
+        <div class="detail-extras" id="detail-extras"></div>
+    </section>
+
+    <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <div>Fetching live police &amp; planning data…</div>
+    </div>
+
+    <script type="module" src="/static/happy/js/main.js"></script>
 </body>
 </html>

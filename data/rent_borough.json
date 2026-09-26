@@ -1,0 +1,299 @@
+{
+  "Barking and Dagenham": {
+    "affordability_score": 9.6,
+    "estimated": false,
+    "rent_1bed": 1269.0,
+    "rent_2bed": 1582.0,
+    "rent_3bed": 1743.0,
+    "rent_4plusbed": 2335.0,
+    "typical_rent": 1732.25
+  },
+  "Barnet": {
+    "affordability_score": 8.05,
+    "estimated": false,
+    "rent_1bed": 1403.0,
+    "rent_2bed": 1744.0,
+    "rent_3bed": 2115.0,
+    "rent_4plusbed": 3029.0,
+    "typical_rent": 2072.75
+  },
+  "Bexley": {
+    "affordability_score": 10.0,
+    "estimated": false,
+    "rent_1bed": 1140.0,
+    "rent_2bed": 1421.0,
+    "rent_3bed": 1739.0,
+    "rent_4plusbed": 2278.0,
+    "typical_rent": 1644.5
+  },
+  "Brent": {
+    "affordability_score": 7.14,
+    "estimated": false,
+    "rent_1bed": 1615.0,
+    "rent_2bed": 1985.0,
+    "rent_3bed": 2323.0,
+    "rent_4plusbed": 3168.0,
+    "typical_rent": 2272.75
+  },
+  "Bromley": {
+    "affordability_score": 8.92,
+    "estimated": false,
+    "rent_1bed": 1245.0,
+    "rent_2bed": 1564.0,
+    "rent_3bed": 1894.0,
+    "rent_4plusbed": 2823.0,
+    "typical_rent": 1881.5
+  },
+  "Camden": {
+    "affordability_score": 4.45,
+    "estimated": false,
+    "rent_1bed": 1994.0,
+    "rent_2bed": 2552.0,
+    "rent_3bed": 2980.0,
+    "rent_4plusbed": 3925.0,
+    "typical_rent": 2862.75
+  },
+  "City of London": {
+    "affordability_score": 7.24,
+    "estimated": true,
+    "rent_1bed": 1568.25,
+    "rent_2bed": 1970.47,
+    "rent_3bed": 2304.31,
+    "rent_4plusbed": 3154.66,
+    "typical_rent": 2249.42
+  },
+  "Croydon": {
+    "affordability_score": 9.53,
+    "estimated": false,
+    "rent_1bed": 1195.0,
+    "rent_2bed": 1487.0,
+    "rent_3bed": 1753.0,
+    "rent_4plusbed": 2552.0,
+    "typical_rent": 1746.75
+  },
+  "Ealing": {
+    "affordability_score": 7.31,
+    "estimated": false,
+    "rent_1bed": 1546.0,
+    "rent_2bed": 1934.0,
+    "rent_3bed": 2288.0,
+    "rent_4plusbed": 3169.0,
+    "typical_rent": 2234.25
+  },
+  "Enfield": {
+    "affordability_score": 8.98,
+    "estimated": false,
+    "rent_1bed": 1303.0,
+    "rent_2bed": 1627.0,
+    "rent_3bed": 1928.0,
+    "rent_4plusbed": 2618.0,
+    "typical_rent": 1869.0
+  },
+  "Greenwich": {
+    "affordability_score": 8.21,
+    "estimated": false,
+    "rent_1bed": 1452.0,
+    "rent_2bed": 1800.0,
+    "rent_3bed": 2082.0,
+    "rent_4plusbed": 2818.0,
+    "typical_rent": 2038.0
+  },
+  "Hackney": {
+    "affordability_score": 5.68,
+    "estimated": false,
+    "rent_1bed": 1875.0,
+    "rent_2bed": 2339.0,
+    "rent_3bed": 2673.0,
+    "rent_4plusbed": 3485.0,
+    "typical_rent": 2593.0
+  },
+  "Hammersmith and Fulham": {
+    "affordability_score": 4.6,
+    "estimated": false,
+    "rent_1bed": 1903.0,
+    "rent_2bed": 2504.0,
+    "rent_3bed": 2859.0,
+    "rent_4plusbed": 4050.0,
+    "typical_rent": 2829.0
+  },
+  "Haringey": {
+    "affordability_score": 7.4,
+    "estimated": false,
+    "rent_1bed": 1567.0,
+    "rent_2bed": 1950.0,
+    "rent_3bed": 2254.0,
+    "rent_4plusbed": 3086.0,
+    "typical_rent": 2214.25
+  },
+  "Harrow": {
+    "affordability_score": 8.82,
+    "estimated": false,
+    "rent_1bed": 1327.0,
+    "rent_2bed": 1636.0,
+    "rent_3bed": 1961.0,
+    "rent_4plusbed": 2686.0,
+    "typical_rent": 1902.5
+  },
+  "Havering": {
+    "affordability_score": 9.84,
+    "estimated": false,
+    "rent_1bed": 1144.0,
+    "rent_2bed": 1455.0,
+    "rent_3bed": 1739.0,
+    "rent_4plusbed": 2378.0,
+    "typical_rent": 1679.0
+  },
+  "Hillingdon": {
+    "affordability_score": 9.39,
+    "estimated": false,
+    "rent_1bed": 1200.0,
+    "rent_2bed": 1523.0,
+    "rent_3bed": 1833.0,
+    "rent_4plusbed": 2557.0,
+    "typical_rent": 1778.25
+  },
+  "Hounslow": {
+    "affordability_score": 7.84,
+    "estimated": false,
+    "rent_1bed": 1508.0,
+    "rent_2bed": 1859.0,
+    "rent_3bed": 2135.0,
+    "rent_4plusbed": 2974.0,
+    "typical_rent": 2119.0
+  },
+  "Islington": {
+    "affordability_score": 4.65,
+    "estimated": false,
+    "rent_1bed": 2010.0,
+    "rent_2bed": 2502.0,
+    "rent_3bed": 2790.0,
+    "rent_4plusbed": 3971.0,
+    "typical_rent": 2818.25
+  },
+  "Kensington and Chelsea": {
+    "affordability_score": 0.01,
+    "estimated": false,
+    "rent_1bed": 2542.0,
+    "rent_2bed": 3313.0,
+    "rent_3bed": 3941.0,
+    "rent_4plusbed": 5553.0,
+    "typical_rent": 3837.25
+  },
+  "Kingston upon Thames": {
+    "affordability_score": 8.53,
+    "estimated": false,
+    "rent_1bed": 1328.0,
+    "rent_2bed": 1695.0,
+    "rent_3bed": 2076.0,
+    "rent_4plusbed": 2772.0,
+    "typical_rent": 1967.75
+  },
+  "Lambeth": {
+    "affordability_score": 6.24,
+    "estimated": false,
+    "rent_1bed": 1740.0,
+    "rent_2bed": 2172.0,
+    "rent_3bed": 2487.0,
+    "rent_4plusbed": 3481.0,
+    "typical_rent": 2470.0
+  },
+  "Lewisham": {
+    "affordability_score": 8.74,
+    "estimated": false,
+    "rent_1bed": 1391.0,
+    "rent_2bed": 1713.0,
+    "rent_3bed": 1965.0,
+    "rent_4plusbed": 2618.0,
+    "typical_rent": 1921.75
+  },
+  "Merton": {
+    "affordability_score": 7.54,
+    "estimated": false,
+    "rent_1bed": 1523.0,
+    "rent_2bed": 1883.0,
+    "rent_3bed": 2238.0,
+    "rent_4plusbed": 3089.0,
+    "typical_rent": 2183.25
+  },
+  "Newham": {
+    "affordability_score": 8.51,
+    "estimated": false,
+    "rent_1bed": 1510.0,
+    "rent_2bed": 1847.0,
+    "rent_3bed": 2040.0,
+    "rent_4plusbed": 2485.0,
+    "typical_rent": 1970.5
+  },
+  "Redbridge": {
+    "affordability_score": 9.07,
+    "estimated": false,
+    "rent_1bed": 1298.0,
+    "rent_2bed": 1604.0,
+    "rent_3bed": 1882.0,
+    "rent_4plusbed": 2608.0,
+    "typical_rent": 1848.0
+  },
+  "Richmond upon Thames": {
+    "affordability_score": 6.35,
+    "estimated": false,
+    "rent_1bed": 1593.0,
+    "rent_2bed": 2048.0,
+    "rent_3bed": 2476.0,
+    "rent_4plusbed": 3661.0,
+    "typical_rent": 2444.5
+  },
+  "Southwark": {
+    "affordability_score": 6.13,
+    "estimated": false,
+    "rent_1bed": 1762.0,
+    "rent_2bed": 2213.0,
+    "rent_3bed": 2574.0,
+    "rent_4plusbed": 3423.0,
+    "typical_rent": 2493.0
+  },
+  "Sutton": {
+    "affordability_score": 9.58,
+    "estimated": false,
+    "rent_1bed": 1191.0,
+    "rent_2bed": 1499.0,
+    "rent_3bed": 1828.0,
+    "rent_4plusbed": 2426.0,
+    "typical_rent": 1736.0
+  },
+  "Tower Hamlets": {
+    "affordability_score": 6.02,
+    "estimated": false,
+    "rent_1bed": 1898.0,
+    "rent_2bed": 2307.0,
+    "rent_3bed": 2621.0,
+    "rent_4plusbed": 3243.0,
+    "typical_rent": 2517.25
+  },
+  "Waltham Forest": {
+    "affordability_score": 8.97,
+    "estimated": false,
+    "rent_1bed": 1354.0,
+    "rent_2bed": 1670.0,
+    "rent_3bed": 1957.0,
+    "rent_4plusbed": 2505.0,
+    "typical_rent": 1871.5
+  },
+  "Wandsworth": {
+    "affordability_score": 5.67,
+    "estimated": false,
+    "rent_1bed": 1808.0,
+    "rent_2bed": 2303.0,
+    "rent_3bed": 2634.0,
+    "rent_4plusbed": 3631.0,
+    "typical_rent": 2594.0
+  },
+  "Westminster": {
+    "affordability_score": 0.0,
+    "estimated": false,
+    "rent_1bed": 2550.0,
+    "rent_2bed": 3324.0,
+    "rent_3bed": 3930.0,
+    "rent_4plusbed": 5552.0,
+    "typical_rent": 3839.0
+  }
+}
