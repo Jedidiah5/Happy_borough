@@ -186,7 +186,9 @@ class HappinessHandler(http.server.SimpleHTTPRequestHandler):
 
 if __name__ == "__main__":
     warm_police_cache_async()
-    server = socketserver.TCPServer(("", PORT), HappinessHandler)
+    socketserver.ThreadingTCPServer.allow_reuse_address = True
+    socketserver.ThreadingTCPServer.daemon_threads = True
+    server = socketserver.ThreadingTCPServer(("", PORT), HappinessHandler)
     print(f"😊 HappyBorough Server running with Live UK Police API at http://localhost:{PORT}")
     try:
         server.serve_forever()
