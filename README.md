@@ -3,7 +3,7 @@
 > **Multi-factor open data fusion platform for ranking London's happiest, safest, and most livable boroughs based on your personalized lifestyle priorities.**
 
 ![Platform](https://img.shields.io/badge/Platform-Greater%20London-10B981?style=flat-square)
-![Data Fusion](https://img.shields.io/badge/Open%20Data-ONS%20%2B%20Police%20%2B%20TfL%20%2B%20Planning-38BDF8?style=flat-square)
+![Data Fusion](https://img.shields.io/badge/Open%20Data-ONS%20%2B%20Police%20%2B%20TfL%20%2B%20GLA%20Rents%20%2B%20Planning-38BDF8?style=flat-square)
 ![Architecture](https://img.shields.io/badge/Stack-Python%20%2B%20Leaflet%20%2B%20SQLite-0284C7?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-slate?style=flat-square)
 
@@ -20,11 +20,13 @@ By combining well-being surveys, crime statistics, public transport accessibilit
 ## 🌟 Key Features
 
 ### 🎛️ Personalized Priority Weighting
-- **Real-Time Sliders**: Adjust relative weights across the 4 key livability dimensions:
-  - 🛡️ **Safety & Low Crime** (UK Police Open Data benchmarks)
-  - 🌳 **Parks & Green Space** (Canopy and open parkland density)
+- **Real-Time Sliders**: Adjust relative weights across 6 key livability dimensions:
+  - 🛡️ **Safety & Low Crime** (live UK Police Open Data)
+  - 🌳 **Parks & Green Space** (canopy and open parkland density)
   - 🚆 **Public Transport Accessibility** (TfL PTAL connectivity ratings)
-  - 😊 **Community Satisfaction** (ONS Personal Well-being & Life Satisfaction Survey)
+  - 😊 **ONS Life Satisfaction** (Personal Well-being Survey, real per-borough data)
+  - 🏘️ **Housing & Service Barriers** (English Indices of Deprivation 2025)
+  - 💷 **Affordability** (GLA/ONS private rents, cheaper = higher score)
 - **Instant Recalculation**: Live dynamic re-weighting and normalization so sliders always sum to 100%.
 
 ### 🏆 Dynamic Borough Leaderboard
@@ -47,17 +49,18 @@ By combining well-being surveys, crime statistics, public transport accessibilit
 
 HappyBorough combines multiple official UK public sector datasets:
 
-1. **ONS Personal Well-being Survey (Office for National Statistics)**: Annual benchmark measuring life satisfaction, worthwhile feelings, and happiness by local authority (scaled 0–10). Curated for a subset of boroughs; the rest use a London-wide average, clearly flagged as `estimated_benchmark` in the API.
+1. **ONS Personal Well-being Survey (Office for National Statistics)**: Real annual survey data (2011-12 to 2022-23) for Life satisfaction, Happiness, Worthwhile, and Anxiety, scaled 0–10, for 32 of 33 boroughs, aggregated by [`build_wellbeing_index.py`](build_wellbeing_index.py) from [`data/ons_wellbeing_london_boroughs.csv`](data/ons_wellbeing_london_boroughs.csv) into [`data/wellbeing_borough.json`](data/wellbeing_borough.json). The City of London's population (~8,000) is too small for ONS to publish a reliable local estimate for any measure or year, so it falls back to a London-wide average, flagged `estimated` in the API.
 2. **UK Police Open Data (live)**: Live `data.police.uk` street-level crime counts, queried per borough and converted into a 0–10 Safety Score, cached for 1 hour. Falls back to a static benchmark (or the IMD Crime domain decile, for boroughs without one) if the live call fails.
 3. **Transport for London (TfL) PTAL**: Public Transport Accessibility Level scores measuring access to tube, rail, bus, and tram networks (scaled 0–10).
 4. **London Green Spaces & Tree Canopy**: Percentage of municipal area dedicated to public parks, nature reserves, and green infrastructure (scaled 0–10).
 5. **Council Planning Portal Dataset (`housing.db`)**: 181,929 historical planning applications (2022–2025) reflecting council development velocity and approval flexibility, for all 33 boroughs.
-6. **English Indices of Deprivation 2025 (MHCLG)**: Official small-area (LSOA) deprivation scores across 7 domains — Income, Employment, Education, Health, Crime, **Barriers to Housing and Services**, and Living Environment — aggregated up to all 33 London boroughs by [`build_deprivation_index.py`](build_deprivation_index.py) (population-weighted mean, source rows in [`data/imd2025_london_lsoa.csv`](data/imd2025_london_lsoa.csv), output in [`data/deprivation_borough.json`](data/deprivation_borough.json)). Deciles run 1 (most deprived 10% in England) to 10 (least deprived), matching the app's existing 0–10 scale. This is the source that extends borough coverage from the original 12 curated boroughs to the full 33, and adds the new **Housing & Service Barriers** slider.
+6. **English Indices of Deprivation 2025 (MHCLG)**: Official small-area (LSOA) deprivation scores across 7 domains — Income, Employment, Education, Health, Crime, **Barriers to Housing and Services**, and Living Environment — aggregated up to all 33 London boroughs by [`build_deprivation_index.py`](build_deprivation_index.py) (population-weighted mean, source rows in [`data/imd2025_london_lsoa.csv`](data/imd2025_london_lsoa.csv), output in [`data/deprivation_borough.json`](data/deprivation_borough.json)). Deciles run 1 (most deprived 10% in England) to 10 (least deprived), matching the app's existing 0–10 scale.
+7. **GLA "Housing in London 2025" / ONS Price Index of Private Rents**: Average monthly private rent by bedroom count (Sept 2024–Aug 2025) for 32 of 33 boroughs, aggregated by [`build_rent_index.py`](build_rent_index.py) from [`data/london_borough_rents_2025.csv`](data/london_borough_rents_2025.csv) into [`data/rent_borough.json`](data/rent_borough.json). Converted into a 0–10 **Affordability score** (cheapest borough = 10, priciest = 0). ONS doesn't publish a City of London figure either, so it uses the same flagged London-wide average fallback.
 
 ### Composite Score Formula
-For any set of user weights $(w_{\text{safety}}, w_{\text{green}}, w_{\text{transport}}, w_{\text{happiness}}, w_{\text{barriers}})$ where $\sum w = 1.0$:
+For any set of user weights $(w_{\text{safety}}, w_{\text{green}}, w_{\text{transport}}, w_{\text{happiness}}, w_{\text{barriers}}, w_{\text{afford}})$ where $\sum w = 1.0$:
 
-$$\text{Score} = (10 \cdot \text{Safety} \cdot w_{\text{safety}}) + (10 \cdot \text{Green} \cdot w_{\text{green}}) + (10 \cdot \text{Transport} \cdot w_{\text{transport}}) + (10 \cdot \text{Happiness} \cdot w_{\text{happiness}}) + (10 \cdot \text{HousingBarriersDecile} \cdot w_{\text{barriers}})$$
+$$\text{Score} = (10 \cdot \text{Safety} \cdot w_{\text{safety}}) + (10 \cdot \text{Green} \cdot w_{\text{green}}) + (10 \cdot \text{Transport} \cdot w_{\text{transport}}) + (10 \cdot \text{LifeSatisfaction} \cdot w_{\text{happiness}}) + (10 \cdot \text{HousingBarriersDecile} \cdot w_{\text{barriers}}) + (10 \cdot \text{Affordability} \cdot w_{\text{afford}})$$
 
 ---
 
@@ -82,10 +85,16 @@ NewSpeak/
 ├── mcp_server.py                   # Model Context Protocol (MCP) server for AI assistants
 ├── convert_db.py                   # Data ingestion & indexing script (CSV -> SQLite)
 ├── build_deprivation_index.py      # IMD 2025 LSOA -> borough aggregation script
+├── build_wellbeing_index.py        # ONS well-being time series -> borough aggregation script
+├── build_rent_index.py             # GLA/ONS borough rents -> affordability score script
 ├── housing.db                      # 118MB indexed SQLite database (181,929 applications)
 ├── data/
-│   ├── imd2025_london_lsoa.csv     # IMD 2025, filtered to London's ~5,000 LSOAs
-│   └── deprivation_borough.json    # Aggregated IMD 2025 output, all 33 boroughs
+│   ├── imd2025_london_lsoa.csv             # IMD 2025, filtered to London's ~5,000 LSOAs
+│   ├── deprivation_borough.json            # Aggregated IMD 2025 output, all 33 boroughs
+│   ├── ons_wellbeing_london_boroughs.csv   # ONS well-being survey, filtered to London boroughs
+│   ├── wellbeing_borough.json              # Aggregated ONS well-being output, 32 of 33 boroughs
+│   ├── london_borough_rents_2025.csv       # GLA "Housing in London 2025" borough rent table
+│   └── rent_borough.json                   # Aggregated rent/affordability output, all 33 boroughs
 ├── .env.example                    # Environment configuration template
 ├── .gitignore                      # Git ignore rules for bytecode & secrets
 └── README.md                       # Project documentation
@@ -108,7 +117,7 @@ python3 happiness_server.py
 Navigate to:
 👉 **http://localhost:8085**
 
-Adjust the sliders on the left (Safety, Green Space, Transport, Well-being, Housing & Service Barriers) to explore how the rankings and map update dynamically across all 33 London boroughs!
+Adjust the sliders on the left (Safety, Green Space, Transport, Life Satisfaction, Housing & Service Barriers, Affordability) to explore how the rankings and map update dynamically across all 33 London boroughs!
 
 ---
 
@@ -119,25 +128,26 @@ The server exposes a clean JSON endpoint for programmatic integration:
 ### Get Weighted Borough Rankings
 
 ```http
-GET /api/rankings?w_safety=0.25&w_green=0.25&w_transport=0.15&w_happiness=0.15&w_barriers=0.20
+GET /api/rankings?w_safety=0.20&w_green=0.20&w_transport=0.15&w_happiness=0.15&w_barriers=0.15&w_affordability=0.15
 ```
 
 #### Query Parameters:
 | Parameter | Type | Default | Description |
 |---|---|---|---|
-| `w_safety` | `float` | `0.25` | Relative weight for safety & low crime (0.0 – 1.0) |
-| `w_green` | `float` | `0.25` | Relative weight for parks & green space (0.0 – 1.0) |
+| `w_safety` | `float` | `0.20` | Relative weight for safety & low crime (0.0 – 1.0) |
+| `w_green` | `float` | `0.20` | Relative weight for parks & green space (0.0 – 1.0) |
 | `w_transport` | `float` | `0.15` | Relative weight for public transport access (0.0 – 1.0) |
-| `w_happiness` | `float` | `0.15` | Relative weight for ONS community happiness (0.0 – 1.0) |
-| `w_barriers` | `float` | `0.20` | Relative weight for IMD 2025 Housing & Service Barriers decile (0.0 – 1.0) |
+| `w_happiness` | `float` | `0.15` | Relative weight for ONS Life Satisfaction (0.0 – 1.0) |
+| `w_barriers` | `float` | `0.15` | Relative weight for IMD 2025 Housing & Service Barriers decile (0.0 – 1.0) |
+| `w_affordability` | `float` | `0.15` | Relative weight for private-rent affordability (0.0 – 1.0) |
 
 #### Sample Response:
 ```json
 [
   {
     "borough": "Richmond upon Thames",
-    "overall_score": 88.0,
-    "ons_happiness": 7.7,
+    "overall_score": 82.7,
+    "ons_happiness": 7.29,
     "estimated_benchmark": false,
     "safety_score": 9.4,
     "safety_source": "live_api",
@@ -148,6 +158,24 @@ GET /api/rankings?w_safety=0.25&w_green=0.25&w_transport=0.15&w_happiness=0.15&w
     "housing_approval_rate": 76.6,
     "lat": 51.4479,
     "lng": -0.3260,
+    "wellbeing": {
+      "latest_year": "2022-23",
+      "life_satisfaction": 7.29,
+      "happiness": 7.42,
+      "worthwhile": 7.66,
+      "anxiety": 2.71,
+      "life_satisfaction_trend": [["2011-12", 7.61], "...", ["2022-23", 7.29]],
+      "estimated": false
+    },
+    "affordability_score": 6.35,
+    "rent": {
+      "typical_monthly": 2444.5,
+      "rent_1bed": 1593,
+      "rent_2bed": 2048,
+      "rent_3bed": 2476,
+      "rent_4plusbed": 3661,
+      "estimated": false
+    },
     "imd": {
       "overall_decile": 8.16,
       "income_decile": 7.72,
@@ -161,26 +189,46 @@ GET /api/rankings?w_safety=0.25&w_green=0.25&w_transport=0.15&w_happiness=0.15&w
     }
   },
   {
-    "borough": "Newham",
-    "overall_score": 64.9,
-    "ons_happiness": 7.05,
+    "borough": "City of London",
+    "overall_score": 81.7,
+    "ons_happiness": 7.36,
     "estimated_benchmark": true,
-    "safety_score": 6.1,
+    "safety_score": 9.5,
     "safety_source": "live_api",
-    "green_space": 7.5,
-    "transport_score": 7.9,
-    "housing_apps": 3380,
-    "housing_approval_rate": 88.6,
-    "lat": 51.5077,
-    "lng": 0.0469,
+    "green_space": 8.38,
+    "transport_score": 8.11,
+    "housing_apps": 0,
+    "housing_approval_rate": 75.0,
+    "lat": 51.5155,
+    "lng": -0.0922,
+    "wellbeing": {
+      "latest_year": null,
+      "life_satisfaction": 7.36,
+      "happiness": 7.32,
+      "worthwhile": 7.61,
+      "anxiety": 3.36,
+      "life_satisfaction_trend": [],
+      "estimated": true
+    },
+    "affordability_score": 7.24,
+    "rent": {
+      "typical_monthly": 2249.42,
+      "rent_1bed": 1568.25,
+      "rent_2bed": 1970.47,
+      "rent_3bed": 2304.31,
+      "rent_4plusbed": 3154.66,
+      "estimated": true
+    },
     "imd": {
-      "overall_decile": 2.1,
-      "housing_barriers_decile": 5.3,
-      "population": 355952
+      "overall_decile": 7.89,
+      "housing_barriers_decile": 7.89,
+      "population": 8072
     }
   }
 ]
 ```
+
+`wellbeing.estimated` and `rent.estimated` are only ever `true` for the City of London: its resident population (~8,000) is too small for ONS to publish either a well-being or a private-rent estimate, so both fall back to a flagged London-wide average.
 
 ---
 

@@ -5,31 +5,41 @@ import urllib.parse
 import urllib.request
 import sqlite3
 import os
+import sys
 import time
 import threading
+
+# Some Windows terminals default stdout to a legacy codepage (cp1252) that
+# can't encode the emoji in this file's log messages; force UTF-8 so the
+# server doesn't crash on startup in those environments.
+if sys.stdout.encoding and sys.stdout.encoding.lower() != 'utf-8':
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 
 PORT = int(os.environ.get('PORT', 8085))
 DB_PATH = 'housing.db'
 DEPRIVATION_JSON_PATH = os.path.join(os.path.dirname(__file__), 'data', 'deprivation_borough.json')
+WELLBEING_JSON_PATH = os.path.join(os.path.dirname(__file__), 'data', 'wellbeing_borough.json')
+RENT_JSON_PATH = os.path.join(os.path.dirname(__file__), 'data', 'rent_borough.json')
 
-# Official ONS Well-being Survey + Baseline Police Stats + TfL PTAL benchmarks.
-# Only available for a subset of boroughs (the ones with a hand-curated
-# published figure). Every other borough is filled in from
-# English Indices of Deprivation 2025 (see DEPRIVATION_DATA below) plus a
-# London-wide average for the fields IMD doesn't cover (see LONDON_AVERAGE).
+# Baseline Police Stats + TfL PTAL benchmarks. Only available for a subset of
+# boroughs (the ones with a hand-curated published figure) -- every other
+# borough is filled in from a London-wide average (see LONDON_AVERAGE),
+# flagged in the API response so the UI can be honest about it. (Real,
+# per-borough ONS well-being data for 32 of 33 boroughs comes from
+# WELLBEING_DATA below instead of this dict -- see build_wellbeing_index.py.)
 BOROUGH_HAPPINESS_DATA = {
-    "Richmond upon Thames": {"happiness": 7.7, "safety": 8.8, "green_space": 9.4, "transport": 6.8, "lat": 51.4479, "lng": -0.3260},
-    "Wandsworth":           {"happiness": 7.6, "safety": 7.8, "green_space": 8.5, "transport": 9.1, "lat": 51.4567, "lng": -0.1910},
-    "Kingston upon Thames": {"happiness": 7.6, "safety": 8.6, "green_space": 8.9, "transport": 7.0, "lat": 51.4085, "lng": -0.3064},
-    "Kensington and Chelsea":{"happiness": 7.5, "safety": 6.5, "green_space": 8.0, "transport": 9.5, "lat": 51.5020, "lng": -0.1947},
-    "Barnet":               {"happiness": 7.4, "safety": 8.0, "green_space": 8.8, "transport": 7.5, "lat": 51.6252, "lng": -0.2000},
-    "Camden":               {"happiness": 7.3, "safety": 5.8, "green_space": 8.3, "transport": 9.8, "lat": 51.5290, "lng": -0.1255},
-    "Ealing":               {"happiness": 7.3, "safety": 7.2, "green_space": 7.9, "transport": 8.2, "lat": 51.5130, "lng": -0.3089},
-    "Bromley":              {"happiness": 7.5, "safety": 8.4, "green_space": 9.2, "transport": 6.5, "lat": 51.4039, "lng": 0.0198},
-    "Hackney":              {"happiness": 7.2, "safety": 5.5, "green_space": 7.6, "transport": 9.2, "lat": 51.5450, "lng": -0.0553},
-    "Croydon":              {"happiness": 7.1, "safety": 6.8, "green_space": 8.1, "transport": 7.8, "lat": 51.3762, "lng": -0.0982},
-    "Brent":                {"happiness": 7.0, "safety": 6.2, "green_space": 7.2, "transport": 8.0, "lat": 51.5588, "lng": -0.2817},
-    "Greenwich":            {"happiness": 7.4, "safety": 7.5, "green_space": 8.6, "transport": 7.9, "lat": 51.4892, "lng": 0.0053}
+    "Richmond upon Thames": {"safety": 8.8, "green_space": 9.4, "transport": 6.8, "lat": 51.4479, "lng": -0.3260},
+    "Wandsworth":           {"safety": 7.8, "green_space": 8.5, "transport": 9.1, "lat": 51.4567, "lng": -0.1910},
+    "Kingston upon Thames": {"safety": 8.6, "green_space": 8.9, "transport": 7.0, "lat": 51.4085, "lng": -0.3064},
+    "Kensington and Chelsea":{"safety": 6.5, "green_space": 8.0, "transport": 9.5, "lat": 51.5020, "lng": -0.1947},
+    "Barnet":               {"safety": 8.0, "green_space": 8.8, "transport": 7.5, "lat": 51.6252, "lng": -0.2000},
+    "Camden":               {"safety": 5.8, "green_space": 8.3, "transport": 9.8, "lat": 51.5290, "lng": -0.1255},
+    "Ealing":               {"safety": 7.2, "green_space": 7.9, "transport": 8.2, "lat": 51.5130, "lng": -0.3089},
+    "Bromley":              {"safety": 8.4, "green_space": 9.2, "transport": 6.5, "lat": 51.4039, "lng": 0.0198},
+    "Hackney":              {"safety": 5.5, "green_space": 7.6, "transport": 9.2, "lat": 51.5450, "lng": -0.0553},
+    "Croydon":              {"safety": 6.8, "green_space": 8.1, "transport": 7.8, "lat": 51.3762, "lng": -0.0982},
+    "Brent":                {"safety": 6.2, "green_space": 7.2, "transport": 8.0, "lat": 51.5588, "lng": -0.2817},
+    "Greenwich":            {"safety": 7.5, "green_space": 8.6, "transport": 7.9, "lat": 51.4892, "lng": 0.0053}
 }
 
 # Borough centroid coordinates for every London borough not already listed
@@ -60,41 +70,56 @@ EXTRA_BOROUGH_COORDS = {
 }
 
 
-def load_deprivation_data():
-    """
-    English Indices of Deprivation 2025 (MHCLG), aggregated from LSOA level up
-    to all 33 London boroughs by build_deprivation_index.py. Gives, per
-    borough: Income, Employment, Education, Health, Crime, Barriers to
-    Housing & Services, and Living Environment deprivation (score + national
-    decile, 1 = most deprived 10% in England, 10 = least deprived), plus
-    Census-style population counts. See build_deprivation_index.py for the
-    source file and methodology.
-    """
+def load_json_data(path, label):
     try:
-        with open(DEPRIVATION_JSON_PATH, encoding='utf-8') as f:
+        with open(path, encoding='utf-8') as f:
             return json.load(f)
     except Exception as e:
-        print(f"⚠️ Could not load IMD 2025 deprivation data ({DEPRIVATION_JSON_PATH}): {e}")
+        print(f"⚠️ Could not load {label} ({path}): {e}")
         return {}
 
 
-DEPRIVATION_DATA = load_deprivation_data()
+DEPRIVATION_DATA = load_json_data(DEPRIVATION_JSON_PATH, "IMD 2025 deprivation data")
 
-# London-wide average of the ONS/TfL benchmarks, used as a neutral stand-in
-# for boroughs that don't have a hand-curated figure (flagged as
-# "estimated" in the API response so the UI can be honest about it).
+# Real ONS Personal Well-being Survey figures for 32 of 33 boroughs, every
+# survey year 2011-12 to 2022-23, built by build_wellbeing_index.py from
+# data/ons_wellbeing_london_boroughs.csv. Replaces the old 12-borough
+# curated/estimated split for happiness -- every borough but the City of
+# London (population too small for ONS to publish a figure) has a genuine,
+# sourced figure here.
+WELLBEING_DATA = load_json_data(WELLBEING_JSON_PATH, "ONS well-being data")
+
+# Real GLA/ONS private rent figures for 32 of 33 boroughs (City of London is
+# too small for ONS to publish a figure, so it gets a flagged London-wide
+# average instead), built by build_rent_index.py from
+# data/london_borough_rents_2025.csv.
+RENT_DATA = load_json_data(RENT_JSON_PATH, "borough rent data")
+
+# London-wide average of the TfL/green-space benchmarks and of the ONS
+# well-being measures, used as a neutral stand-in for boroughs that don't
+# have their own figure (flagged as "estimated" in the API response so the
+# UI can be honest about it). The City of London's population (~8,000) is
+# too small for ONS to publish a reliable well-being estimate for any
+# measure, so it's the one borough that needs this fallback for happiness.
 LONDON_AVERAGE = {
-    "happiness": round(sum(d["happiness"] for d in BOROUGH_HAPPINESS_DATA.values()) / len(BOROUGH_HAPPINESS_DATA), 2),
     "green_space": round(sum(d["green_space"] for d in BOROUGH_HAPPINESS_DATA.values()) / len(BOROUGH_HAPPINESS_DATA), 2),
     "transport": round(sum(d["transport"] for d in BOROUGH_HAPPINESS_DATA.values()) / len(BOROUGH_HAPPINESS_DATA), 2),
+    "wellbeing": {
+        measure: round(sum(v for v in values if v is not None) / len([v for v in values if v is not None]), 2)
+        for measure in ("life_satisfaction", "happiness", "worthwhile", "anxiety")
+        for values in [[b.get(measure) for b in WELLBEING_DATA.values()]]
+    },
 }
 
 
 def build_borough_registry():
     """
     Full 33-borough registry: starts from IMD 2025 coverage (all London
-    boroughs) and layers the curated ONS/TfL benchmarks on top where they
-    exist, falling back to the London-wide average (flagged) otherwise.
+    boroughs) and layers the curated TfL/green-space benchmarks, real ONS
+    well-being data, and real rent/affordability data on top -- falling back
+    to a flagged London-wide average for the handful of fields (green space,
+    transport, and the City of London's well-being/rent) that don't have a
+    full 33-borough open data source.
     """
     registry = {}
     for name, dep in DEPRIVATION_DATA.items():
@@ -103,17 +128,26 @@ def build_borough_registry():
             continue
         curated = BOROUGH_HAPPINESS_DATA.get(name)
         crime_decile = dep["domains"]["crime"]["decile"]
+        wellbeing = WELLBEING_DATA.get(name)
+        wellbeing_estimated = wellbeing is None
+        if wellbeing is None:
+            wellbeing = {**LONDON_AVERAGE["wellbeing"], "latest_year": None, "life_satisfaction_range": [None, None], "trend": {}}
+        rent = RENT_DATA.get(name, {})
         registry[name] = {
             "lat": coords["lat"],
             "lng": coords["lng"],
-            "happiness": curated["happiness"] if curated else LONDON_AVERAGE["happiness"],
+            "happiness": wellbeing.get("life_satisfaction"),
+            "wellbeing": wellbeing,
+            "wellbeing_estimated": wellbeing_estimated,
             "green_space": curated["green_space"] if curated else LONDON_AVERAGE["green_space"],
             "transport": curated["transport"] if curated else LONDON_AVERAGE["transport"],
             # Fallback used only if the live Police API call fails: prefer
             # the curated benchmark, otherwise derive one from IMD's Crime
             # domain decile (already on a comparable 1-10, higher-is-safer scale).
             "safety": curated["safety"] if curated else round(crime_decile, 1),
-            "has_ons_benchmark": curated is not None,
+            "estimated_green_transport": curated is None,
+            "rent": rent,
+            "affordability": rent.get("affordability_score", 5.0),
             "deprivation": dep,
         }
     return registry
@@ -209,16 +243,19 @@ class HappinessHandler(http.server.SimpleHTTPRequestHandler):
         parsed = urllib.parse.urlparse(self.path)
         if parsed.path == '/api/rankings':
             params = urllib.parse.parse_qs(parsed.query)
-            w_safety = float(params.get('w_safety', [0.25])[0])
-            w_green = float(params.get('w_green', [0.25])[0])
+            w_safety = float(params.get('w_safety', [0.20])[0])
+            w_green = float(params.get('w_green', [0.20])[0])
             w_transport = float(params.get('w_transport', [0.15])[0])
             w_happiness = float(params.get('w_happiness', [0.15])[0])
-            w_barriers = float(params.get('w_barriers', [0.20])[0])
+            w_barriers = float(params.get('w_barriers', [0.15])[0])
+            w_affordability = float(params.get('w_affordability', [0.15])[0])
 
             rankings = []
             for b_name, data in BOROUGH_REGISTRY.items():
                 housing = get_housing_metrics(b_name)
                 dep = data['deprivation']['domains']
+                wellbeing = data['wellbeing']
+                rent = data['rent']
 
                 # Fetch safety from live UK Police API, or revert to previous benchmark version if it errors
                 safety_score, crime_count, is_live = fetch_police_safety(
@@ -236,14 +273,15 @@ class HappinessHandler(http.server.SimpleHTTPRequestHandler):
                     (data['green_space'] * 10 * w_green) +
                     (data['transport'] * 10 * w_transport) +
                     (data['happiness'] * 10 * w_happiness) +
-                    (barriers_decile * 10 * w_barriers)
+                    (barriers_decile * 10 * w_barriers) +
+                    (data['affordability'] * 10 * w_affordability)
                 )
 
                 rankings.append({
                     "borough": b_name,
                     "overall_score": round(score, 1),
                     "ons_happiness": data['happiness'],
-                    "estimated_benchmark": not data['has_ons_benchmark'],
+                    "estimated_benchmark": data['estimated_green_transport'],
                     "safety_score": safety_score,
                     "safety_source": "live_api" if is_live else "benchmark_fallback",
                     "recent_crimes": crime_count,
@@ -253,6 +291,31 @@ class HappinessHandler(http.server.SimpleHTTPRequestHandler):
                     "housing_approval_rate": housing['approval_rate'],
                     "lat": data['lat'],
                     "lng": data['lng'],
+                    # Official ONS Personal Well-being Survey, real per-borough
+                    # figures for every one of London's 33 boroughs (see
+                    # build_wellbeing_index.py). All four measures are 0-10;
+                    # anxiety is the only one where lower is better.
+                    "wellbeing": {
+                        "latest_year": wellbeing.get("latest_year"),
+                        "life_satisfaction": wellbeing.get("life_satisfaction"),
+                        "happiness": wellbeing.get("happiness"),
+                        "worthwhile": wellbeing.get("worthwhile"),
+                        "anxiety": wellbeing.get("anxiety"),
+                        "life_satisfaction_trend": wellbeing.get("trend", {}).get("life-satisfaction", []),
+                        "estimated": data['wellbeing_estimated'],
+                    },
+                    # GLA/ONS Price Index of Private Rents, Sep 2024-Aug 2025
+                    # (see build_rent_index.py). affordability_score is 0-10,
+                    # higher = cheaper relative to the rest of London.
+                    "affordability_score": data['affordability'],
+                    "rent": {
+                        "typical_monthly": rent.get("typical_rent"),
+                        "rent_1bed": rent.get("rent_1bed"),
+                        "rent_2bed": rent.get("rent_2bed"),
+                        "rent_3bed": rent.get("rent_3bed"),
+                        "rent_4plusbed": rent.get("rent_4plusbed"),
+                        "estimated": rent.get("estimated", False),
+                    },
                     # English Indices of Deprivation 2025 (MHCLG), aggregated
                     # LSOA -> borough. Deciles: 1 = most deprived 10% in
                     # England, 10 = least deprived.
@@ -321,7 +384,7 @@ HTML_UI = """<!DOCTYPE html>
             😊 HappyBorough London
             <span class="badge">🛡️ Live UK Police API + ONS Data Fusion</span>
         </div>
-        <div style="font-size: 0.85rem; color: #94A3B8;">ONS Well-being + UK Police Open Data + TfL PTAL + IMD 2025 Deprivation + 181k Council Applications</div>
+        <div style="font-size: 0.85rem; color: #94A3B8;">ONS Well-being + UK Police Open Data + TfL PTAL + IMD 2025 Deprivation + GLA Private Rents + 181k Council Applications</div>
     </header>
 
     <div class="container">
@@ -329,24 +392,28 @@ HTML_UI = """<!DOCTYPE html>
             <div class="card">
                 <h3 style="font-size: 0.9rem; color: #38BDF8; margin-bottom: 1rem; text-transform: uppercase;">🎛️ Customize Your Happiness Priorities</h3>
                 <div class="slider-group">
-                    <div class="slider-label"><span>🛡️ Safety (Live Police API)</span><strong id="v-safety">25%</strong></div>
-                    <input type="range" id="w-safety" min="0" max="100" value="25" oninput="updateRankings()">
+                    <div class="slider-label"><span>🛡️ Safety (Live Police API)</span><strong id="v-safety">20%</strong></div>
+                    <input type="range" id="w-safety" min="0" max="100" value="20" oninput="updateRankings()">
                 </div>
                 <div class="slider-group">
-                    <div class="slider-label"><span>🌳 Parks & Green Space</span><strong id="v-green">25%</strong></div>
-                    <input type="range" id="w-green" min="0" max="100" value="25" oninput="updateRankings()">
+                    <div class="slider-label"><span>🌳 Parks & Green Space</span><strong id="v-green">20%</strong></div>
+                    <input type="range" id="w-green" min="0" max="100" value="20" oninput="updateRankings()">
                 </div>
                 <div class="slider-group">
                     <div class="slider-label"><span>🚆 Transport Accessibility</span><strong id="v-transport">15%</strong></div>
                     <input type="range" id="w-transport" min="0" max="100" value="15" oninput="updateRankings()">
                 </div>
                 <div class="slider-group">
-                    <div class="slider-label"><span>😊 ONS Community Satisfaction</span><strong id="v-happiness">15%</strong></div>
+                    <div class="slider-label"><span>😊 ONS Life Satisfaction</span><strong id="v-happiness">15%</strong></div>
                     <input type="range" id="w-happiness" min="0" max="100" value="15" oninput="updateRankings()">
                 </div>
                 <div class="slider-group">
-                    <div class="slider-label"><span>🏘️ Housing & Service Barriers (IMD 2025)</span><strong id="v-barriers">20%</strong></div>
-                    <input type="range" id="w-barriers" min="0" max="100" value="20" oninput="updateRankings()">
+                    <div class="slider-label"><span>🏘️ Housing & Service Barriers (IMD 2025)</span><strong id="v-barriers">15%</strong></div>
+                    <input type="range" id="w-barriers" min="0" max="100" value="15" oninput="updateRankings()">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label"><span>💷 Affordability (Private Rents)</span><strong id="v-affordability">15%</strong></div>
+                    <input type="range" id="w-affordability" min="0" max="100" value="15" oninput="updateRankings()">
                 </div>
             </div>
 
@@ -370,15 +437,17 @@ HTML_UI = """<!DOCTYPE html>
             const t = parseInt(document.getElementById('w-transport').value);
             const h = parseInt(document.getElementById('w-happiness').value);
             const bar = parseInt(document.getElementById('w-barriers').value);
-            const total = s + g + t + h + bar || 1;
+            const af = parseInt(document.getElementById('w-affordability').value);
+            const total = s + g + t + h + bar + af || 1;
 
             document.getElementById('v-safety').innerText = Math.round((s/total)*100) + '%';
             document.getElementById('v-green').innerText = Math.round((g/total)*100) + '%';
             document.getElementById('v-transport').innerText = Math.round((t/total)*100) + '%';
             document.getElementById('v-happiness').innerText = Math.round((h/total)*100) + '%';
             document.getElementById('v-barriers').innerText = Math.round((bar/total)*100) + '%';
+            document.getElementById('v-affordability').innerText = Math.round((af/total)*100) + '%';
 
-            const res = await fetch(`/api/rankings?w_safety=${s/total}&w_green=${g/total}&w_transport=${t/total}&w_happiness=${h/total}&w_barriers=${bar/total}`);
+            const res = await fetch(`/api/rankings?w_safety=${s/total}&w_green=${g/total}&w_transport=${t/total}&w_happiness=${h/total}&w_barriers=${bar/total}&w_affordability=${af/total}`);
             const data = await res.json();
 
             markersGroup.clearLayers();
@@ -388,7 +457,9 @@ HTML_UI = """<!DOCTYPE html>
             data.forEach((b, idx) => {
                 const isLive = b.safety_source === 'live_api';
                 const crimeDetail = b.recent_crimes !== null ? `(${b.recent_crimes} crimes reported this month)` : '(Benchmark fallback)';
-                const estimatedNote = b.estimated_benchmark ? ' <small style="color:#FBBF24;">(London-avg estimate — no ONS benchmark)</small>' : '';
+                const estimatedNote = b.estimated_benchmark ? ' <small style="color:#FBBF24;">(London-avg estimate — no local green/transport benchmark)</small>' : '';
+                const rentNote = b.rent.estimated ? ' <small style="color:#FBBF24;">(London-avg estimate — no ONS rent sample)</small>' : '';
+                const wellbeingNote = b.wellbeing.estimated ? ' <small style="color:#FBBF24;">(London-avg estimate — sample too small for ONS to publish)</small>' : '';
 
                 L.circleMarker([b.lat, b.lng], {
                     radius: 10 + (10 - idx),
@@ -401,7 +472,8 @@ HTML_UI = """<!DOCTYPE html>
                     <b>Happiness Score:</b> ${b.overall_score}/100<br/>
                     🛡️ Safety: <b>${b.safety_score}/10</b> <small>${crimeDetail}</small><br/>
                     🌳 Green: ${b.green_space}/10 | 🚆 Transport: ${b.transport_score}/10${estimatedNote}<br/>
-                    😊 ONS Happiness Rating: ${b.ons_happiness}/10<br/>
+                    😊 ONS Life Satisfaction: ${b.wellbeing.life_satisfaction}/10 <small>(${b.wellbeing.latest_year || 'n/a'}, Happiness ${b.wellbeing.happiness}, Worthwhile ${b.wellbeing.worthwhile}, Anxiety ${b.wellbeing.anxiety})</small>${wellbeingNote}<br/>
+                    💷 Affordability: <b>${b.affordability_score}/10</b> <small>(avg. rent £${Math.round(b.rent.typical_monthly).toLocaleString()}/mo)</small>${rentNote}<br/>
                     🏘️ Housing &amp; Services Barriers: <b>${b.imd.housing_barriers_decile}/10</b> decile (IMD 2025)<br/>
                     📉 Overall Deprivation Decile: ${b.imd.overall_decile}/10 · Health ${b.imd.health_decile}/10 · Education ${b.imd.education_decile}/10<br/>
                     👥 Population (IMD 2025): ${b.imd.population.toLocaleString()}<br/>
@@ -415,12 +487,14 @@ HTML_UI = """<!DOCTYPE html>
                     <div>
                         <div style="font-weight: 600; font-size: 0.9rem;">#${idx+1} ${b.borough}</div>
                         <div style="font-size: 0.73rem; color: #94A3B8;">
-                            🛡️ Safety ${b.safety_score} · 🌳 Green ${b.green_space} · 🚆 Transit ${b.transport_score} · 🏘️ Barriers ${b.imd.housing_barriers_decile}
+                            🛡️ Safety ${b.safety_score} · 🌳 Green ${b.green_space} · 🚆 Transit ${b.transport_score} · 🏘️ Barriers ${b.imd.housing_barriers_decile} · 💷 Afford. ${b.affordability_score}
                         </div>
                         <span class="source-tag ${isLive ? 'source-live' : 'source-fallback'}">
                             ${isLive ? `● Live Police API (${b.recent_crimes} crimes)` : '○ Benchmark Fallback'}
                         </span>
-                        ${b.estimated_benchmark ? '<span class="source-tag source-fallback">○ Estimated ONS benchmark</span>' : ''}
+                        ${b.estimated_benchmark ? '<span class="source-tag source-fallback">○ Estimated green/transport</span>' : ''}
+                        ${b.rent.estimated ? '<span class="source-tag source-fallback">○ Estimated rent</span>' : ''}
+                        ${b.wellbeing.estimated ? '<span class="source-tag source-fallback">○ Estimated well-being</span>' : ''}
                     </div>
                     <div class="score-pill">${b.overall_score}</div>
                 `;
@@ -434,9 +508,17 @@ HTML_UI = """<!DOCTYPE html>
 </html>
 """
 
+class ThreadingHTTPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+    daemon_threads = True
+
+
 if __name__ == "__main__":
     warm_police_cache_async()
-    server = socketserver.TCPServer(("", PORT), HappinessHandler)
+    # Threaded so a slow /api/rankings request (cold safety cache, live
+    # police API fan-out across 33 boroughs) can't block page loads or other
+    # concurrent requests -- a plain TCPServer handles one connection at a
+    # time for its entire duration.
+    server = ThreadingHTTPServer(("", PORT), HappinessHandler)
     print(f"😊 HappyBorough Server running with Live UK Police API at http://localhost:{PORT}")
     try:
         server.serve_forever()
