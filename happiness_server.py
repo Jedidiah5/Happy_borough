@@ -9,6 +9,7 @@ import sys
 import time
 import threading
 import mimetypes
+import concurrent.futures
 
 # Some Windows terminals default stdout to a legacy codepage (cp1252) that
 # can't encode the emoji in this file's log messages; force UTF-8 so the
@@ -30,6 +31,7 @@ STATIC_TYPES = {
 DEPRIVATION_JSON_PATH = os.path.join(os.path.dirname(__file__), 'data', 'deprivation_borough.json')
 WELLBEING_JSON_PATH = os.path.join(os.path.dirname(__file__), 'data', 'wellbeing_borough.json')
 RENT_JSON_PATH = os.path.join(os.path.dirname(__file__), 'data', 'rent_borough.json')
+LSOA_GEOJSON_PATH = os.path.join(os.path.dirname(__file__), 'data', 'lsoa_choropleth.json')
 
 # Baseline Police Stats + TfL PTAL benchmarks. Only available for a subset of
 # boroughs (the ones with a hand-curated published figure) -- every other
@@ -104,6 +106,18 @@ WELLBEING_DATA = load_json_data(WELLBEING_JSON_PATH, "ONS well-being data")
 # average instead), built by build_rent_index.py from
 # data/london_borough_rents_2025.csv.
 RENT_DATA = load_json_data(RENT_JSON_PATH, "borough rent data")
+
+# LSOA-level (neighborhood, ~1,500 people) IMD 2025 choropleth geometry for
+# all 4,994 London small areas, built by build_lsoa_choropleth.py. Read once
+# as raw bytes at startup and served as-is by /api/lsoa-geo -- it's just a
+# static GeoJSON payload for Leaflet, so there's no need to re-parse/dump it
+# on every request.
+try:
+    with open(LSOA_GEOJSON_PATH, 'rb') as f:
+        LSOA_GEOJSON_BYTES = f.read()
+except Exception as e:
+    print(f"⚠️ Could not load LSOA choropleth geometry ({LSOA_GEOJSON_PATH}): {e}")
+    LSOA_GEOJSON_BYTES = b'{"type":"FeatureCollection","features":[]}'
 
 # London-wide average of the TfL/green-space benchmarks and of the ONS
 # well-being measures, used as a neutral stand-in for boroughs that don't
@@ -260,17 +274,23 @@ class HappinessHandler(http.server.SimpleHTTPRequestHandler):
             w_barriers = float(params.get('w_barriers', [0.15])[0])
             w_affordability = float(params.get('w_affordability', [0.15])[0])
 
+            # Fetch safety for all boroughs concurrently -- doing this one
+            # borough at a time (up to a 3.5s timeout each) made a cold-cache
+            # request take 30+ seconds, long enough that the browser gave up
+            # and aborted the connection before the response was ready.
+            with concurrent.futures.ThreadPoolExecutor(max_workers=12) as pool:
+                safety_results = dict(pool.map(
+                    lambda item: (item[0], fetch_police_safety(item[0], item[1]['lat'], item[1]['lng'], item[1]['safety'])),
+                    BOROUGH_REGISTRY.items(),
+                ))
+
             rankings = []
             for b_name, data in BOROUGH_REGISTRY.items():
                 housing = get_housing_metrics(b_name)
                 dep = data['deprivation']['domains']
                 wellbeing = data['wellbeing']
                 rent = data['rent']
-
-                # Fetch safety from live UK Police API, or revert to previous benchmark version if it errors
-                safety_score, crime_count, is_live = fetch_police_safety(
-                    b_name, data['lat'], data['lng'], data['safety']
-                )
+                safety_score, crime_count, is_live = safety_results[b_name]
 
                 # IMD 2025 "Barriers to Housing and Services" decile: higher =
                 # fewer barriers (better affordability/access), same
@@ -344,6 +364,16 @@ class HappinessHandler(http.server.SimpleHTTPRequestHandler):
 
             rankings.sort(key=lambda x: x['overall_score'], reverse=True)
             self.send_json(rankings)
+        elif parsed.path == '/api/lsoa-geo':
+            # Static GeoJSON payload (4,994 London LSOA polygons + IMD 2025
+            # domain deciles), served as-is and fetched lazily by the
+            # frontend only when neighborhood view is switched on.
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Cache-Control', 'public, max-age=3600')
+            self.end_headers()
+            self.wfile.write(LSOA_GEOJSON_BYTES)
         elif parsed.path == '/' or parsed.path == '/index.html':
             self.send_static_file(os.path.join(STATIC_DIR, 'happy', 'index.html'))
         elif parsed.path.startswith('/static/'):
@@ -375,7 +405,6 @@ class HappinessHandler(http.server.SimpleHTTPRequestHandler):
         self.send_header('Access-Control-Allow-Origin', '*')
         self.end_headers()
         self.wfile.write(json.dumps(data).encode('utf-8'))
-
 
 class ThreadingHTTPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     daemon_threads = True
