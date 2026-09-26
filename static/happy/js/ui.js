@@ -176,9 +176,9 @@ export function detailCardExtras(b) {
             ['Income', imd.income_decile], ['Health', imd.health_decile], ['Education', imd.education_decile],
             ['Crime', imd.crime_decile], ['Environment', imd.living_environment_decile],
         ].filter(([, v]) => v != null)
-            .map(([name, v]) => `<span class="dx-chip" style="--d:${v}">${name} <b>${v}</b></span>`).join('');
+            .map(([name, v]) => `<span class="dx-chip" style="--d:${v}">${name} <b>${+Number(v).toFixed(1)}</b></span>`).join('');
         cells.push(`<div class="dx-cell dx-wide"><span class="dx-label">📊 Deprivation deciles <small>(10 = least deprived)</small></span>
-            <strong class="dx-value">${imd.overall_decile}<small>/10 overall</small></strong>
+            <strong class="dx-value">${+Number(imd.overall_decile).toFixed(1)}<small>/10 overall</small></strong>
             <div class="dx-chips">${chips}</div></div>`);
     }
     return cells.length ? `<div class="dx-grid">${cells.join('')}</div>` : '';

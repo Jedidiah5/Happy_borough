@@ -338,7 +338,13 @@ input[type=range]:focus-visible { box-shadow: 0 0 0 2px var(--mint); }
 
 /* Six-factor layout + detail card extras */
 #sliders .slider-group { margin-bottom: 10px; }
-.detail-card { width: 340px; max-height: calc(100vh - 140px); overflow-y: auto; }
+.detail-card {
+    width: 340px;
+    max-height: calc(100vh - 140px);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(148, 163, 184, 0.3) transparent;
+}
 .bar:nth-child(5) .bar-fill { transition-delay: 0.24s; }
 .bar:nth-child(6) .bar-fill { transition-delay: 0.30s; }
 
