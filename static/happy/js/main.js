@@ -1,5 +1,5 @@
 import { createCityScene } from './scene.js';
-import { createFlatMap } from './flatMap.js';
+import { createFlatMap, LSOA_DOMAINS } from './flatMap.js';
 import { initSearch } from './search.js';
 import { FACTORS, computeScore, rankBoroughs } from './scoring.js';
 import {
@@ -54,16 +54,37 @@ function setPressed(button, on) {
     button.setAttribute('aria-pressed', String(on));
 }
 
+function initDomainPicker() {
+    const select = document.getElementById('lsoa-domain');
+    select.innerHTML = LSOA_DOMAINS.map((d) => `<option value="${d.value}">${d.label}</option>`).join('');
+    select.addEventListener('change', () => {
+        if (state.view.mode === 'neighborhoods') flatMap.showNeighborhoods(select.value);
+    });
+}
+
 function initToolbar() {
     const toolbar = document.querySelector('.toolbar');
+    const scoreFilters = document.getElementById('score-filters');
+    const liveToggle = document.getElementById('toggle-live');
+    const domainPicker = document.getElementById('lsoa-domain');
     for (const btn of toolbar.querySelectorAll('[data-mode]')) {
         btn.addEventListener('click', () => {
             state.view.mode = btn.dataset.mode;
             toolbar.querySelectorAll('[data-mode]').forEach((b) => b.classList.toggle('is-on', b === btn));
-            const isMap = state.view.mode === 'map';
-            document.body.classList.toggle('mode-map', isMap);
-            document.getElementById('flatmap').hidden = !isMap;
-            if (isMap) flatMap.show();
+            const isFlat = state.view.mode !== 'city';
+            const isNeighborhoods = state.view.mode === 'neighborhoods';
+            document.body.classList.toggle('mode-map', isFlat);
+            document.getElementById('flatmap').hidden = !isFlat;
+            scoreFilters.hidden = isNeighborhoods;
+            liveToggle.hidden = isNeighborhoods;
+            domainPicker.hidden = !isNeighborhoods;
+            if (isNeighborhoods) {
+                flatMap.show();
+                flatMap.showNeighborhoods(domainPicker.value);
+            } else if (isFlat) {
+                flatMap.show();
+                flatMap.showBoroughs();
+            }
         });
     }
     for (const btn of toolbar.querySelectorAll('[data-filter]')) {
@@ -170,6 +191,7 @@ async function boot() {
         city = { update() {}, focusOn() {}, resetView() {}, setVisible() {}, setLabelsVisible() {} };
     }
     flatMap = createFlatMap(document.getElementById('flatmap'), { onSelect: selectBorough });
+    initDomainPicker();
     initToolbar();
     initDetailCard({ onClose: clearSelection });
     initSearch({

@@ -37,8 +37,9 @@
         <div class="seg" role="group" aria-label="Map style">
             <button type="button" data-mode="city" class="is-on">🏙️ 3D city</button>
             <button type="button" data-mode="map">🗺️ Map</button>
+            <button type="button" data-mode="neighborhoods">🔬 Neighborhoods</button>
         </div>
-        <div class="seg" role="group" aria-label="Show boroughs">
+        <div class="seg" role="group" aria-label="Show boroughs" id="score-filters">
             <button type="button" data-filter="all" class="is-on">All</button>
             <button type="button" data-filter="top5">Top 5</button>
             <button type="button" data-filter="top10">Top 10</button>
@@ -47,6 +48,7 @@
         <button type="button" class="chip" id="toggle-live" aria-pressed="false">● Live police only</button>
         <button type="button" class="chip is-on" id="toggle-labels" aria-pressed="true">Labels</button>
         <button type="button" class="chip is-on" id="toggle-leaderboard" aria-pressed="true">🏆 Leaderboard</button>
+        <select class="chip lsoa-domain" id="lsoa-domain" hidden aria-label="Neighborhood deprivation domain"></select>
     </nav>
 
     <div class="search-wrap">
