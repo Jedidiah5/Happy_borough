@@ -1,5 +1,5 @@
 import { createCityScene } from './scene.js';
-import { computeScore, rankBoroughs } from './scoring.js';
+import { FACTORS, computeScore, rankBoroughs } from './scoring.js';
 import {
     hideDetail,
     initDetailCard,
@@ -23,12 +23,7 @@ const state = {
 let city = null;
 
 async function fetchRankings(weights) {
-    const query = new URLSearchParams({
-        w_safety: weights.safety,
-        w_green: weights.green,
-        w_transport: weights.transport,
-        w_happiness: weights.happiness,
-    });
+    const query = new URLSearchParams(FACTORS.map((f) => [f.param, weights[f.key]]));
     const res = await fetch(`/api/rankings?${query}`);
     if (!res.ok) throw new Error(`/api/rankings returned ${res.status}`);
     return res.json();

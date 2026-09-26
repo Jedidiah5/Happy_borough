@@ -27,28 +27,13 @@
 
     <div class="hero">
         <h1>Where in London would you be <em>happiest</em>?</h1>
-        <p>Weigh safety, green space, transport and wellbeing. Every borough re-ranks live.</p>
+        <p>Weigh safety, green space, transport, wellbeing, housing access and rent. Every borough re-ranks live.</p>
     </div>
 
     <aside class="panel panel-left" id="controls">
         <h2 class="panel-title">Your priorities</h2>
         <p class="panel-sub">Drag to re-rank London instantly</p>
-        <div class="slider-group">
-            <div class="slider-row"><span>🛡️ Safety <small>live police data</small></span><strong id="v-safety">30%</strong></div>
-            <input type="range" id="w-safety" data-key="safety" min="0" max="100" value="30">
-        </div>
-        <div class="slider-group">
-            <div class="slider-row"><span>🌳 Parks &amp; green space</span><strong id="v-green">30%</strong></div>
-            <input type="range" id="w-green" data-key="green" min="0" max="100" value="30">
-        </div>
-        <div class="slider-group">
-            <div class="slider-row"><span>🚆 Transport access</span><strong id="v-transport">20%</strong></div>
-            <input type="range" id="w-transport" data-key="transport" min="0" max="100" value="20">
-        </div>
-        <div class="slider-group">
-            <div class="slider-row"><span>😊 ONS happiness</span><strong id="v-happiness">20%</strong></div>
-            <input type="range" id="w-happiness" data-key="happiness" min="0" max="100" value="20">
-        </div>
+        <div id="sliders"></div>
         <div class="sync-status" id="sync-status"></div>
     </aside>
 
@@ -63,13 +48,9 @@
         <div class="detail-rank" id="detail-rank"></div>
         <h3 class="detail-name" id="detail-name"></h3>
         <div id="detail-source"></div>
-        <div class="bars">
-            <div class="bar" data-key="safety_score"><span>🛡️ Safety</span><div class="bar-track"><div class="bar-fill"></div></div><strong></strong></div>
-            <div class="bar" data-key="green_space"><span>🌳 Green space</span><div class="bar-track"><div class="bar-fill"></div></div><strong></strong></div>
-            <div class="bar" data-key="transport_score"><span>🚆 Transport</span><div class="bar-track"><div class="bar-fill"></div></div><strong></strong></div>
-            <div class="bar" data-key="ons_happiness"><span>😊 Happiness</span><div class="bar-track"><div class="bar-fill"></div></div><strong></strong></div>
-        </div>
+        <div class="bars" id="detail-bars"></div>
         <div class="detail-housing" id="detail-housing"></div>
+        <div class="detail-extras" id="detail-extras"></div>
     </section>
 
     <div id="loading" class="loading">

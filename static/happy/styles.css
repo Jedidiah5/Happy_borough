@@ -336,6 +336,64 @@ input[type=range]:focus-visible { box-shadow: 0 0 0 2px var(--mint); }
 
 .detail-housing strong { color: var(--text); }
 
+/* Six-factor layout + detail card extras */
+#sliders .slider-group { margin-bottom: 10px; }
+.detail-card { width: 340px; max-height: calc(100vh - 140px); overflow-y: auto; }
+.bar:nth-child(5) .bar-fill { transition-delay: 0.24s; }
+.bar:nth-child(6) .bar-fill { transition-delay: 0.30s; }
+
+.detail-extras:empty { display: none; }
+.dx-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 10px;
+}
+.dx-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px 10px;
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    background: rgba(148, 163, 184, 0.06);
+    animation: dx-in 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+.dx-cell:nth-child(2) { animation-delay: 0.08s; }
+.dx-cell:nth-child(3) { animation-delay: 0.16s; }
+.dx-wide { grid-column: 1 / -1; }
+.dx-label { font-size: 0.68rem; color: var(--text-faint); letter-spacing: 0.02em; }
+.dx-label small { font-size: 0.62rem; }
+.dx-value { font-size: 1.05rem; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
+.dx-value small { font-size: 0.68rem; font-weight: 500; color: var(--text-dim); margin-left: 2px; }
+.dx-sub { font-size: 0.66rem; color: var(--text-dim); }
+.dx-est {
+    padding: 0 5px;
+    border-radius: 999px;
+    background: rgba(251, 191, 36, 0.16);
+    color: var(--amber);
+    font-size: 0.6rem;
+}
+.dx-trend { font-size: 0.7rem; }
+.dx-up { color: var(--mint); }
+.dx-down { color: #f87171; }
+.dx-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.dx-chip {
+    padding: 2px 7px;
+    border-radius: 999px;
+    font-size: 0.64rem;
+    color: #cbd5e1;
+    background: color-mix(in srgb, var(--mint) calc(var(--d) * 3%), rgba(148, 163, 184, 0.1));
+}
+.dx-chip b { color: var(--text); }
+
+@keyframes dx-in {
+    from { opacity: 0; transform: translateY(6px); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .dx-cell { animation: none; }
+}
+
 .hero {
     position: fixed;
     top: 50%;

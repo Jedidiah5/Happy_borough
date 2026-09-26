@@ -1,4 +1,4 @@
-import { WEIGHT_KEYS, normaliseWeights } from './scoring.js';
+import { FACTORS, WEIGHT_KEYS, normaliseWeights } from './scoring.js';
 import { prefersReducedMotion } from './tween.js';
 
 export function sourceTagHtml(b) {
@@ -75,7 +75,25 @@ export function renderLeaderboard(ranked, { onSelect } = {}) {
     });
 }
 
+function escapeHtml(text) {
+    return String(text).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+}
+
+function buildSliders() {
+    document.getElementById('sliders').innerHTML = FACTORS.map((f) => `
+        <div class="slider-group">
+            <div class="slider-row"><span>${f.icon} ${escapeHtml(f.label)}${f.note ? ` <small>${escapeHtml(f.note)}</small>` : ''}</span><strong id="v-${f.key}"></strong></div>
+            <input type="range" id="w-${f.key}" data-key="${f.key}" min="0" max="100" value="${f.defaultWeight}" aria-label="${escapeHtml(f.label)} weight">
+        </div>`).join('');
+}
+
+function buildDetailBars() {
+    document.getElementById('detail-bars').innerHTML = FACTORS.map((f) => `
+        <div class="bar" data-key="${f.key}"><span>${f.icon} ${escapeHtml(f.short || f.label)}</span><div class="bar-track"><div class="bar-fill"></div></div><strong></strong></div>`).join('');
+}
+
 export function initSliders({ onInput, onCommit }) {
+    buildSliders();
     const inputs = WEIGHT_KEYS.map((key) => document.getElementById(`w-${key}`));
 
     function readWeights() {
@@ -101,6 +119,7 @@ export function markSelectedRow(name) {
 }
 
 export function initDetailCard({ onClose }) {
+    buildDetailBars();
     document.getElementById('detail-back').addEventListener('click', onClose);
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && !document.getElementById('detail').hidden) onClose();
@@ -116,18 +135,53 @@ export function showDetail(b, rank, { opening = false } = {}) {
     document.getElementById('detail-housing').innerHTML = b.housing_apps > 0
         ? `🏗️ <strong>${b.housing_approval_rate}%</strong> planning approval · ${b.housing_apps.toLocaleString()} applications`
         : '🏗️ No planning data';
+    document.getElementById('detail-extras').innerHTML = detailCardExtras(b);
 
+    const factorByKey = new Map(FACTORS.map((f) => [f.key, f]));
     const bars = [...card.querySelectorAll('.bar')];
-    for (const bar of bars) {
-        const value = b[bar.dataset.key];
-        bar.querySelector('strong').textContent = `${value}/10`;
+    const values = bars.map((bar) => Number(factorByKey.get(bar.dataset.key).value(b)) || 0);
+    bars.forEach((bar, i) => {
+        bar.querySelector('strong').textContent = `${+values[i].toFixed(1)}/10`;
         if (opening) bar.querySelector('.bar-fill').style.width = '0%';
-    }
+    });
     card.hidden = false;
     if (opening) card.getBoundingClientRect();
     requestAnimationFrame(() => {
-        for (const bar of bars) bar.querySelector('.bar-fill').style.width = `${b[bar.dataset.key] * 10}%`;
+        bars.forEach((bar, i) => { bar.querySelector('.bar-fill').style.width = `${Math.min(values[i], 10) * 10}%`; });
     });
+}
+
+const estimatedTag = (flag) => (flag ? ' <span class="dx-est" title="Estimated">est.</span>' : '');
+
+export function detailCardExtras(b) {
+    const cells = [];
+    const rent = b.rent;
+    if (rent && rent.typical_monthly) {
+        cells.push(`<div class="dx-cell"><span class="dx-label">💷 Typical rent${estimatedTag(rent.estimated)}</span>
+            <strong class="dx-value">£${Math.round(rent.typical_monthly).toLocaleString()}<small>/mo</small></strong>
+            ${rent.rent_1bed ? `<span class="dx-sub">1-bed £${Math.round(rent.rent_1bed).toLocaleString()} · 2-bed £${Math.round(rent.rent_2bed || 0).toLocaleString()}</span>` : ''}</div>`);
+    }
+    const wb = b.wellbeing;
+    if (wb) {
+        const trend = wb.life_satisfaction_trend;
+        const arrow = typeof trend === 'number' ? (trend > 0 ? '▲' : trend < 0 ? '▼' : '■') : '';
+        const trendCls = typeof trend === 'number' ? (trend > 0 ? 'dx-up' : trend < 0 ? 'dx-down' : '') : '';
+        cells.push(`<div class="dx-cell"><span class="dx-label">😊 Life satisfaction${estimatedTag(wb.estimated)}</span>
+            <strong class="dx-value">${wb.life_satisfaction ?? '–'}<small>/10</small>${arrow ? ` <span class="dx-trend ${trendCls}">${arrow}</span>` : ''}</strong>
+            <span class="dx-sub">Anxiety ${wb.anxiety ?? '–'} · Worthwhile ${wb.worthwhile ?? '–'}${wb.latest_year ? ` · ${escapeHtml(wb.latest_year)}` : ''}</span></div>`);
+    }
+    const imd = b.imd;
+    if (imd && imd.overall_decile) {
+        const chips = [
+            ['Income', imd.income_decile], ['Health', imd.health_decile], ['Education', imd.education_decile],
+            ['Crime', imd.crime_decile], ['Environment', imd.living_environment_decile],
+        ].filter(([, v]) => v != null)
+            .map(([name, v]) => `<span class="dx-chip" style="--d:${v}">${name} <b>${v}</b></span>`).join('');
+        cells.push(`<div class="dx-cell dx-wide"><span class="dx-label">📊 Deprivation deciles <small>(10 = least deprived)</small></span>
+            <strong class="dx-value">${imd.overall_decile}<small>/10 overall</small></strong>
+            <div class="dx-chips">${chips}</div></div>`);
+    }
+    return cells.length ? `<div class="dx-grid">${cells.join('')}</div>` : '';
 }
 
 export function hideDetail() {
