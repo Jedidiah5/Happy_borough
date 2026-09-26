@@ -1,0 +1,200 @@
+{
+  "Barking and Dagenham": {
+    "lsoa_count": 115,
+    "mean_accessibility_index": 8.73,
+    "ptal_band": "2",
+    "transport_score": 1.47
+  },
+  "Barnet": {
+    "lsoa_count": 220,
+    "mean_accessibility_index": 8.22,
+    "ptal_band": "2",
+    "transport_score": 1.28
+  },
+  "Bexley": {
+    "lsoa_count": 148,
+    "mean_accessibility_index": 5.5,
+    "ptal_band": "2",
+    "transport_score": 0.26
+  },
+  "Brent": {
+    "lsoa_count": 181,
+    "mean_accessibility_index": 11.52,
+    "ptal_band": "3",
+    "transport_score": 2.51
+  },
+  "Bromley": {
+    "lsoa_count": 199,
+    "mean_accessibility_index": 5.97,
+    "ptal_band": "2",
+    "transport_score": 0.44
+  },
+  "Camden": {
+    "lsoa_count": 130,
+    "mean_accessibility_index": 28.84,
+    "ptal_band": "5",
+    "transport_score": 8.99
+  },
+  "City of London": {
+    "lsoa_count": 6,
+    "mean_accessibility_index": 80.59,
+    "ptal_band": "6b",
+    "transport_score": 10.0
+  },
+  "Croydon": {
+    "lsoa_count": 229,
+    "mean_accessibility_index": 9.06,
+    "ptal_band": "2",
+    "transport_score": 1.59
+  },
+  "Ealing": {
+    "lsoa_count": 199,
+    "mean_accessibility_index": 9.76,
+    "ptal_band": "3",
+    "transport_score": 1.85
+  },
+  "Enfield": {
+    "lsoa_count": 183,
+    "mean_accessibility_index": 6.86,
+    "ptal_band": "2",
+    "transport_score": 0.77
+  },
+  "Greenwich": {
+    "lsoa_count": 164,
+    "mean_accessibility_index": 10.89,
+    "ptal_band": "3",
+    "transport_score": 2.28
+  },
+  "Hackney": {
+    "lsoa_count": 149,
+    "mean_accessibility_index": 16.86,
+    "ptal_band": "4",
+    "transport_score": 4.51
+  },
+  "Hammersmith and Fulham": {
+    "lsoa_count": 115,
+    "mean_accessibility_index": 18.01,
+    "ptal_band": "4",
+    "transport_score": 4.94
+  },
+  "Haringey": {
+    "lsoa_count": 147,
+    "mean_accessibility_index": 14.5,
+    "ptal_band": "3",
+    "transport_score": 3.63
+  },
+  "Harrow": {
+    "lsoa_count": 144,
+    "mean_accessibility_index": 7.98,
+    "ptal_band": "2",
+    "transport_score": 1.19
+  },
+  "Havering": {
+    "lsoa_count": 153,
+    "mean_accessibility_index": 5.03,
+    "ptal_band": "1b",
+    "transport_score": 0.09
+  },
+  "Hillingdon": {
+    "lsoa_count": 170,
+    "mean_accessibility_index": 4.8,
+    "ptal_band": "1b",
+    "transport_score": 0.0
+  },
+  "Hounslow": {
+    "lsoa_count": 150,
+    "mean_accessibility_index": 7.91,
+    "ptal_band": "2",
+    "transport_score": 1.16
+  },
+  "Islington": {
+    "lsoa_count": 126,
+    "mean_accessibility_index": 25.67,
+    "ptal_band": "5",
+    "transport_score": 7.8
+  },
+  "Kensington and Chelsea": {
+    "lsoa_count": 101,
+    "mean_accessibility_index": 22.51,
+    "ptal_band": "5",
+    "transport_score": 6.62
+  },
+  "Kingston upon Thames": {
+    "lsoa_count": 99,
+    "mean_accessibility_index": 7.11,
+    "ptal_band": "2",
+    "transport_score": 0.86
+  },
+  "Lambeth": {
+    "lsoa_count": 181,
+    "mean_accessibility_index": 20.66,
+    "ptal_band": "4",
+    "transport_score": 5.93
+  },
+  "Lewisham": {
+    "lsoa_count": 175,
+    "mean_accessibility_index": 12.69,
+    "ptal_band": "3",
+    "transport_score": 2.95
+  },
+  "Merton": {
+    "lsoa_count": 126,
+    "mean_accessibility_index": 9.96,
+    "ptal_band": "2",
+    "transport_score": 1.93
+  },
+  "Newham": {
+    "lsoa_count": 185,
+    "mean_accessibility_index": 14.64,
+    "ptal_band": "3",
+    "transport_score": 3.68
+  },
+  "Redbridge": {
+    "lsoa_count": 164,
+    "mean_accessibility_index": 7.67,
+    "ptal_band": "2",
+    "transport_score": 1.07
+  },
+  "Richmond upon Thames": {
+    "lsoa_count": 115,
+    "mean_accessibility_index": 6.33,
+    "ptal_band": "2",
+    "transport_score": 0.57
+  },
+  "Southwark": {
+    "lsoa_count": 173,
+    "mean_accessibility_index": 22.38,
+    "ptal_band": "4",
+    "transport_score": 6.58
+  },
+  "Sutton": {
+    "lsoa_count": 123,
+    "mean_accessibility_index": 6.73,
+    "ptal_band": "2",
+    "transport_score": 0.72
+  },
+  "Tower Hamlets": {
+    "lsoa_count": 169,
+    "mean_accessibility_index": 22.82,
+    "ptal_band": "5",
+    "transport_score": 6.74
+  },
+  "Waltham Forest": {
+    "lsoa_count": 146,
+    "mean_accessibility_index": 9.44,
+    "ptal_band": "2",
+    "transport_score": 1.74
+  },
+  "Wandsworth": {
+    "lsoa_count": 186,
+    "mean_accessibility_index": 14.78,
+    "ptal_band": "3",
+    "transport_score": 3.73
+  },
+  "Westminster": {
+    "lsoa_count": 123,
+    "mean_accessibility_index": 31.54,
+    "ptal_band": "6a",
+    "transport_score": 10.0
+  }
+}
