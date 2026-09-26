@@ -585,24 +585,39 @@ body.is-ready .panel-right {
     transform: none;
 }
 
-@media (max-width: 1280px) {
-    .badge { display: none; }
-}
-
-.toolbar {
+/* Toolbar + search stack in one column so a wrapping toolbar pushes the search down instead of hiding under it. */
+.center-controls {
     position: fixed;
     top: 84px;
     left: 50%;
     z-index: 12;
     display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 6px;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
     width: max-content;
     max-width: calc(100vw - 700px);
     transform: translateX(-50%);
+}
+
+.toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    max-width: 100%;
     opacity: 0;
     transition: opacity 0.6s 0.7s;
+}
+
+.seg button { white-space: nowrap; }
+
+@media (max-width: 1280px) {
+    .badge { display: none; }
+    .panel-left { width: 270px; }
+    .panel-right { width: 280px; }
+    .center-controls { max-width: calc(100vw - 640px); }
+    #flatmap .leaflet-control-zoom { margin-left: 310px; }
 }
 
 body.is-ready .toolbar { opacity: 1; }
@@ -660,16 +675,12 @@ body.is-ready .toolbar { opacity: 1; }
 #toggle-live[hidden] { display: none; }
 
 .search-wrap {
-    position: fixed;
-    top: 128px;
-    left: 50%;
-    z-index: 12;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 8px;
-    width: min(420px, calc(100vw - 700px));
-    transform: translateX(-50%);
+    width: 420px;
+    max-width: 100%;
     opacity: 0;
     transition: opacity 0.6s 0.8s;
 }
@@ -795,35 +806,126 @@ body.mode-map .hero h1 { text-shadow: 0 2px 0 #fff, 0 0 18px #fff, 0 0 30px #fff
 .tower-tooltip[hidden] { display: none; }
 .tower-tooltip span { color: var(--green-deep); font-weight: 900; font-variant-numeric: tabular-nums; }
 
-/* Narrow screens and no-WebGL: scene becomes a banner, panels stack and scroll. */
-@media (max-width: 820px) {
-    html, body { overflow: auto; }
+/* Phones (portrait and landscape): the scene becomes a banner at the top of a
+   normally scrolling page, panels stack below it, and the borough detail card
+   becomes a bottom sheet. Keep in sync with STACKED_LAYOUT_QUERY in main.js. */
+@media (max-width: 820px), (max-height: 560px) {
+    :root { --scene-h: 46vh; }
+    @supports (height: 1svh) {
+        /* svh ignores the collapsing mobile URL bar, so the banner doesn't jump while scrolling. */
+        :root { --scene-h: 46svh; }
+    }
+    html, body { height: auto; overflow: visible; }
     body {
         display: flex;
         flex-direction: column;
         gap: 12px;
-        padding: 46vh 12px 24px;
+        min-height: 100vh;
+        padding: calc(var(--scene-h) + 12px) max(12px, env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+        overflow-x: clip;
     }
-    #scene { height: 46vh; bottom: auto; }
-    .topbar { top: 12px; left: 14px; }
-    .hero { width: 92vw; }
-    body.is-ready .hero { top: 60px; transform: translate(-50%, 0) scale(0.55); }
+    #scene,
+    #flatmap { position: absolute; height: var(--scene-h); bottom: auto; }
+    .topbar { position: absolute; top: max(12px, env(safe-area-inset-top)); left: max(14px, env(safe-area-inset-left)); }
+    .hero { position: absolute; width: 92vw; }
+    body.is-ready .hero { top: calc(max(12px, env(safe-area-inset-top)) + 50px); transform: translate(-50%, 0) scale(0.55); }
+    /* The title would sit on top of the zoomed-in towers. */
+    body.has-detail .hero { opacity: 0; transition: opacity 0.3s; }
     .panel,
     .panel-left,
-    .panel-right,
-    .detail-card {
+    .panel-right {
         position: relative;
         inset: auto;
         width: auto;
         transform: none;
     }
-    .detail-card { order: -1; animation: none; }
-    .toolbar { position: relative; top: auto; left: auto; max-width: none; transform: none; }
-    .search-wrap { position: relative; top: auto; left: auto; width: 100%; transform: none; }
-    #flatmap { height: 46vh; bottom: auto; }
+    .panel {
+        background: var(--paper-solid);
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+    }
+    .center-controls {
+        position: relative;
+        top: auto;
+        left: auto;
+        width: auto;
+        max-width: none;
+        align-items: stretch;
+        transform: none;
+    }
+    /* One swipeable row instead of wrapping into a tall block. */
+    .toolbar {
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+        margin: 0 -12px;
+        padding: 2px 12px 6px;
+        overflow-x: auto;
+        overscroll-behavior-x: contain;
+        scrollbar-width: none;
+        /* Fade the right edge to hint that the row scrolls sideways. */
+        -webkit-mask-image: linear-gradient(90deg, #000 88%, transparent);
+        mask-image: linear-gradient(90deg, #000 88%, transparent);
+    }
+    .toolbar::-webkit-scrollbar { display: none; }
+    .toolbar > * { flex-shrink: 0; }
+    .search-wrap { width: 100%; }
     .panel-right { max-height: none; }
     .leaderboard { overflow: visible; }
-    .loading { position: fixed; }
+    body.leaderboard-hidden .panel-right { display: none; }
+    #flatmap .leaflet-control-zoom { margin: 0 0 12px 12px; }
+
+    /* Source tooltips span the slider row so they can't run off the right edge. */
+    .slider-group { position: relative; }
+    .info-wrap { position: static; }
+    .info-tip { top: 26px; left: 0; right: 0; width: auto; }
+
+    .detail-card {
+        position: fixed;
+        top: auto;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 30;
+        width: auto;
+        max-height: calc(100vh - var(--scene-h) + 24px);
+        padding: 14px max(16px, env(safe-area-inset-right)) calc(16px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+        border-bottom: 0;
+        border-radius: var(--radius) var(--radius) 0 0;
+        transform: none;
+        overscroll-behavior: contain;
+        animation: sheet-in 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+    @supports (height: 1svh) {
+        .detail-card { max-height: calc(100svh - var(--scene-h) + 24px); }
+    }
+    .loading {
+        position: fixed;
+        bottom: calc(24px + env(safe-area-inset-bottom));
+        max-width: calc(100vw - 24px);
+        white-space: nowrap;
+    }
+}
+
+@keyframes sheet-in {
+    from { transform: translateY(100%); }
+    to { transform: none; }
+}
+
+/* Touch screens: bigger hit areas, and 16px inputs so iOS doesn't zoom in on focus. */
+@media (pointer: coarse) {
+    button,
+    .lb-row { -webkit-tap-highlight-color: transparent; }
+    .seg button,
+    .chip { min-height: 38px; padding: 8px 14px; }
+    .search-input,
+    .lsoa-domain { font-size: 16px; }
+    .search-clear { width: 32px; height: 32px; }
+    .info-icon { width: 22px; height: 22px; font-size: 0.72rem; }
+    .detail-back { padding: 8px 14px; font-size: 0.82rem; }
+    .lb-row { padding: 10px; }
+    input[type=range] { height: 12px; }
+    input[type=range]::-webkit-slider-thumb { width: 28px; height: 28px; }
+    input[type=range]::-moz-range-thumb { width: 24px; height: 24px; }
 }
 
 body.no-webgl {

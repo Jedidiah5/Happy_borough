@@ -35,6 +35,10 @@ function skyTexture() {
     return texture;
 }
 const AUTO_ROTATE_RESUME_MS = 6000;
+// Below this canvas width all 33 labels overlap into an unreadable pile, so
+// only the top few (plus the selected tower) keep theirs.
+const COMPACT_LABELS_BELOW_PX = 700;
+const COMPACT_LABEL_COUNT = 5;
 
 function makeProjector(boroughs) {
     const lat0 = boroughs.reduce((s, b) => s + b.lat, 0) / boroughs.length;
@@ -48,8 +52,9 @@ function makeProjector(boroughs) {
 }
 
 export function createCityScene(container, { onSelect } = {}) {
+    const isPhone = window.matchMedia('(pointer: coarse) and (max-width: 820px), (pointer: coarse) and (max-height: 560px)').matches;
     const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, isPhone ? 1.5 : 2));
     renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.toneMapping = THREE.NeutralToneMapping;
     renderer.shadowMap.enabled = true;
@@ -94,7 +99,7 @@ export function createCityScene(container, { onSelect } = {}) {
     const sun = new THREE.DirectionalLight(0xfff1d6, 2.2);
     sun.position.set(22, 42, 16);
     sun.castShadow = true;
-    sun.shadow.mapSize.set(2048, 2048);
+    sun.shadow.mapSize.setScalar(isPhone ? 1024 : 2048);
     Object.assign(sun.shadow.camera, { left: -40, right: 40, top: 40, bottom: -40, near: 1, far: 120 });
     sun.shadow.bias = -0.0005;
     sun.shadow.normalBias = 0.02;
@@ -127,12 +132,15 @@ export function createCityScene(container, { onSelect } = {}) {
 
     let visibleNames = null;
     let labelsOn = true;
+    let compactLabels = container.clientWidth < COMPACT_LABELS_BELOW_PX;
+    let selected = null;
 
     function applyVisibility() {
         for (const [name, tower] of towers) {
             const shown = !visibleNames || visibleNames.has(name);
+            const labelled = !compactLabels || tower.rank < COMPACT_LABEL_COUNT || name === selected;
             tower.group.visible = shown;
-            tower.label.visible = shown && labelsOn;
+            tower.label.visible = shown && labelsOn && labelled;
         }
     }
 
@@ -358,7 +366,6 @@ export function createCityScene(container, { onSelect } = {}) {
     const HOME_POSITION = camera.position.clone();
     const HOME_TARGET = controls.target.clone();
     let cancelCameraTween = null;
-    let selected = null;
 
     function flyCamera(toPosition, toTarget, duration = 1100) {
         if (cancelCameraTween) cancelCameraTween();
@@ -384,6 +391,7 @@ export function createCityScene(container, { onSelect } = {}) {
         if (selected && towers.has(selected)) towers.get(selected).ring.scale.setScalar(1);
         selected = name;
         if (name && towers.has(name)) towers.get(name).ring.scale.setScalar(1.6);
+        applyVisibility();
     }
 
     function focusOn(name) {
@@ -415,6 +423,10 @@ export function createCityScene(container, { onSelect } = {}) {
         renderer.setSize(w, h);
         labelRenderer.setSize(w, h);
         composer.setSize(w, h);
+        if (compactLabels !== w < COMPACT_LABELS_BELOW_PX) {
+            compactLabels = w < COMPACT_LABELS_BELOW_PX;
+            applyVisibility();
+        }
     }
     new ResizeObserver(resize).observe(container);
 

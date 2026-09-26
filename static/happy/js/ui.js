@@ -173,6 +173,7 @@ export function showDetail(b, rank, { opening = false } = {}) {
         if (opening) bar.querySelector('.bar-fill').style.width = '0%';
     });
     card.hidden = false;
+    document.body.classList.add('has-detail');
     if (opening) card.getBoundingClientRect();
     requestAnimationFrame(() => {
         bars.forEach((bar, i) => { bar.querySelector('.bar-fill').style.width = `${Math.min(values[i], 10) * 10}%`; });
@@ -219,6 +220,7 @@ export function detailCardExtras(b) {
 
 export function hideDetail() {
     document.getElementById('detail').hidden = true;
+    document.body.classList.remove('has-detail');
 }
 
 export function setSyncStatus(state, text) {

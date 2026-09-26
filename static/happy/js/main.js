@@ -11,8 +11,11 @@ import {
     setSyncStatus,
     showDetail,
 } from './ui.js';
+import { prefersReducedMotion } from './tween.js';
 
 const SCORE_TOLERANCE = 0.1;
+// Same breakpoint as the stacked phone layout in styles.css.
+const STACKED_LAYOUT_QUERY = window.matchMedia('(max-width: 820px), (max-height: 560px)');
 
 const state = {
     boroughs: [],
@@ -141,6 +144,11 @@ function selectBorough(name) {
     flatMap.focusOn(name);
     markSelectedRow(name);
     showDetail(state.ranked[rank], rank, { opening: true });
+    // On phones the map is a banner at the top of the page and the detail card
+    // is a bottom sheet, so bring the map back into view to show the fly-to.
+    if (STACKED_LAYOUT_QUERY.matches && window.scrollY > 0) {
+        window.scrollTo({ top: 0, behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
+    }
 }
 
 function clearSelection() {

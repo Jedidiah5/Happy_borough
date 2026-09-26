@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#7fd0f5">
     <title>HappyBorough London — Legal Neighborhood Vibe & Happiness Index</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -33,31 +34,33 @@
         <p>Weigh safety, green space, transport, wellbeing, housing access and rent. Every borough re-ranks live.</p>
     </div>
 
-    <nav class="toolbar" aria-label="View options">
-        <div class="seg" role="group" aria-label="Map style">
-            <button type="button" data-mode="city" class="is-on">🏙️ 3D city</button>
-            <button type="button" data-mode="map">🗺️ Map</button>
-            <button type="button" data-mode="neighborhoods">🔬 Neighborhoods</button>
-        </div>
-        <div class="seg" role="group" aria-label="Show boroughs" id="score-filters">
-            <button type="button" data-filter="all" class="is-on">All</button>
-            <button type="button" data-filter="top5">Top 5</button>
-            <button type="button" data-filter="top10">Top 10</button>
-            <button type="button" data-filter="bottom5">Bottom 5</button>
-        </div>
-        <button type="button" class="chip" id="toggle-live" aria-pressed="false">● Live police only</button>
-        <button type="button" class="chip is-on" id="toggle-labels" aria-pressed="true">Labels</button>
-        <button type="button" class="chip is-on" id="toggle-leaderboard" aria-pressed="true">🏆 Leaderboard</button>
-        <select class="chip lsoa-domain" id="lsoa-domain" hidden aria-label="Neighborhood deprivation domain"></select>
-    </nav>
+    <div class="center-controls">
+        <nav class="toolbar" aria-label="View options">
+            <div class="seg" role="group" aria-label="Map style">
+                <button type="button" data-mode="city" class="is-on">🏙️ 3D city</button>
+                <button type="button" data-mode="map">🗺️ Map</button>
+                <button type="button" data-mode="neighborhoods">🔬 Neighborhoods</button>
+            </div>
+            <div class="seg" role="group" aria-label="Show boroughs" id="score-filters">
+                <button type="button" data-filter="all" class="is-on">All</button>
+                <button type="button" data-filter="top5">Top 5</button>
+                <button type="button" data-filter="top10">Top 10</button>
+                <button type="button" data-filter="bottom5">Bottom 5</button>
+            </div>
+            <button type="button" class="chip" id="toggle-live" aria-pressed="false">● Live police only</button>
+            <button type="button" class="chip is-on" id="toggle-labels" aria-pressed="true">Labels</button>
+            <button type="button" class="chip is-on" id="toggle-leaderboard" aria-pressed="true">🏆 Leaderboard</button>
+            <select class="chip lsoa-domain" id="lsoa-domain" hidden aria-label="Neighborhood deprivation domain"></select>
+        </nav>
 
-    <div class="search-wrap">
-        <form class="search-bar" id="search-form" role="search" aria-label="Search a postcode, address or borough">
-            <span class="search-icon" aria-hidden="true">🔍</span>
-            <input type="text" id="search-input" class="search-input" placeholder="Search a postcode, address or borough…" autocomplete="off" aria-label="Postcode, address or borough">
-            <button type="button" class="search-clear" id="search-clear" hidden aria-label="Clear search">✕</button>
-        </form>
-        <div class="search-feedback" id="search-feedback" hidden role="status" aria-live="polite"></div>
+        <div class="search-wrap">
+            <form class="search-bar" id="search-form" role="search" aria-label="Search a postcode, address or borough">
+                <span class="search-icon" aria-hidden="true">🔍</span>
+                <input type="text" id="search-input" class="search-input" placeholder="Search a postcode, address or borough…" autocomplete="off" enterkeyhint="search" aria-label="Postcode, address or borough">
+                <button type="button" class="search-clear" id="search-clear" hidden aria-label="Clear search">✕</button>
+            </form>
+            <div class="search-feedback" id="search-feedback" hidden role="status" aria-live="polite"></div>
+        </div>
     </div>
 
     <aside class="panel panel-left" id="controls">
