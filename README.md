@@ -47,16 +47,17 @@ By combining well-being surveys, crime statistics, public transport accessibilit
 
 HappyBorough combines multiple official UK public sector datasets:
 
-1. **ONS Personal Well-being Survey (Office for National Statistics)**: Annual benchmark measuring life satisfaction, worthwhile feelings, and happiness by local authority (scaled 0–10).
-2. **UK Police Open Data**: Crime incident rates normalized into a Safety Score (scaled 0–10).
+1. **ONS Personal Well-being Survey (Office for National Statistics)**: Annual benchmark measuring life satisfaction, worthwhile feelings, and happiness by local authority (scaled 0–10). Curated for a subset of boroughs; the rest use a London-wide average, clearly flagged as `estimated_benchmark` in the API.
+2. **UK Police Open Data (live)**: Live `data.police.uk` street-level crime counts, queried per borough and converted into a 0–10 Safety Score, cached for 1 hour. Falls back to a static benchmark (or the IMD Crime domain decile, for boroughs without one) if the live call fails.
 3. **Transport for London (TfL) PTAL**: Public Transport Accessibility Level scores measuring access to tube, rail, bus, and tram networks (scaled 0–10).
 4. **London Green Spaces & Tree Canopy**: Percentage of municipal area dedicated to public parks, nature reserves, and green infrastructure (scaled 0–10).
-5. **Council Planning Portal Dataset (`housing.db`)**: 181,929 historical planning applications (2022–2025) reflecting council development velocity and approval flexibility.
+5. **Council Planning Portal Dataset (`housing.db`)**: 181,929 historical planning applications (2022–2025) reflecting council development velocity and approval flexibility, for all 33 boroughs.
+6. **English Indices of Deprivation 2025 (MHCLG)**: Official small-area (LSOA) deprivation scores across 7 domains — Income, Employment, Education, Health, Crime, **Barriers to Housing and Services**, and Living Environment — aggregated up to all 33 London boroughs by [`build_deprivation_index.py`](build_deprivation_index.py) (population-weighted mean, source rows in [`data/imd2025_london_lsoa.csv`](data/imd2025_london_lsoa.csv), output in [`data/deprivation_borough.json`](data/deprivation_borough.json)). Deciles run 1 (most deprived 10% in England) to 10 (least deprived), matching the app's existing 0–10 scale. This is the source that extends borough coverage from the original 12 curated boroughs to the full 33, and adds the new **Housing & Service Barriers** slider.
 
 ### Composite Score Formula
-For any set of user weights $(w_{\text{safety}}, w_{\text{green}}, w_{\text{transport}}, w_{\text{happiness}})$ where $\sum w = 1.0$:
+For any set of user weights $(w_{\text{safety}}, w_{\text{green}}, w_{\text{transport}}, w_{\text{happiness}}, w_{\text{barriers}})$ where $\sum w = 1.0$:
 
-$$\text{Score} = (10 \cdot \text{Safety} \cdot w_{\text{safety}}) + (10 \cdot \text{Green} \cdot w_{\text{green}}) + (10 \cdot \text{Transport} \cdot w_{\text{transport}}) + (10 \cdot \text{Happiness} \cdot w_{\text{happiness}})$$
+$$\text{Score} = (10 \cdot \text{Safety} \cdot w_{\text{safety}}) + (10 \cdot \text{Green} \cdot w_{\text{green}}) + (10 \cdot \text{Transport} \cdot w_{\text{transport}}) + (10 \cdot \text{Happiness} \cdot w_{\text{happiness}}) + (10 \cdot \text{HousingBarriersDecile} \cdot w_{\text{barriers}})$$
 
 ---
 
@@ -76,14 +77,18 @@ $$\text{Score} = (10 \cdot \text{Safety} \cdot w_{\text{safety}}) + (10 \cdot \t
 
 ```
 NewSpeak/
-├── happiness_server.py     # HappyBorough application server & API (Port 8085)
-├── server.py               # Complementary PlanPulse 3D planning feasibility server (Port 8080)
-├── mcp_server.py           # Model Context Protocol (MCP) server for AI assistants
-├── convert_db.py           # Data ingestion & indexing script (CSV -> SQLite)
-├── housing.db              # 118MB indexed SQLite database (181,929 applications)
-├── .env.example            # Environment configuration template
-├── .gitignore              # Git ignore rules for bytecode & secrets
-└── README.md               # Project documentation
+├── happiness_server.py             # HappyBorough application server & API (Port 8085)
+├── server.py                       # Complementary PlanPulse 3D planning feasibility server (Port 8080)
+├── mcp_server.py                   # Model Context Protocol (MCP) server for AI assistants
+├── convert_db.py                   # Data ingestion & indexing script (CSV -> SQLite)
+├── build_deprivation_index.py      # IMD 2025 LSOA -> borough aggregation script
+├── housing.db                      # 118MB indexed SQLite database (181,929 applications)
+├── data/
+│   ├── imd2025_london_lsoa.csv     # IMD 2025, filtered to London's ~5,000 LSOAs
+│   └── deprivation_borough.json    # Aggregated IMD 2025 output, all 33 boroughs
+├── .env.example                    # Environment configuration template
+├── .gitignore                      # Git ignore rules for bytecode & secrets
+└── README.md                       # Project documentation
 ```
 
 ---
@@ -103,7 +108,7 @@ python3 happiness_server.py
 Navigate to:
 👉 **http://localhost:8085**
 
-Adjust the sliders on the left (Safety, Green Space, Transport, Well-being) to explore how the rankings and map update dynamically!
+Adjust the sliders on the left (Safety, Green Space, Transport, Well-being, Housing & Service Barriers) to explore how the rankings and map update dynamically across all 33 London boroughs!
 
 ---
 
@@ -114,43 +119,65 @@ The server exposes a clean JSON endpoint for programmatic integration:
 ### Get Weighted Borough Rankings
 
 ```http
-GET /api/rankings?w_safety=0.35&w_green=0.25&w_transport=0.20&w_happiness=0.20
+GET /api/rankings?w_safety=0.25&w_green=0.25&w_transport=0.15&w_happiness=0.15&w_barriers=0.20
 ```
 
 #### Query Parameters:
 | Parameter | Type | Default | Description |
 |---|---|---|---|
-| `w_safety` | `float` | `0.3` | Relative weight for safety & low crime (0.0 – 1.0) |
-| `w_green` | `float` | `0.3` | Relative weight for parks & green space (0.0 – 1.0) |
-| `w_transport` | `float` | `0.2` | Relative weight for public transport access (0.0 – 1.0) |
-| `w_happiness` | `float` | `0.2` | Relative weight for ONS community happiness (0.0 – 1.0) |
+| `w_safety` | `float` | `0.25` | Relative weight for safety & low crime (0.0 – 1.0) |
+| `w_green` | `float` | `0.25` | Relative weight for parks & green space (0.0 – 1.0) |
+| `w_transport` | `float` | `0.15` | Relative weight for public transport access (0.0 – 1.0) |
+| `w_happiness` | `float` | `0.15` | Relative weight for ONS community happiness (0.0 – 1.0) |
+| `w_barriers` | `float` | `0.20` | Relative weight for IMD 2025 Housing & Service Barriers decile (0.0 – 1.0) |
 
 #### Sample Response:
 ```json
 [
   {
     "borough": "Richmond upon Thames",
-    "overall_score": 82.5,
+    "overall_score": 88.0,
     "ons_happiness": 7.7,
-    "safety_score": 8.8,
+    "estimated_benchmark": false,
+    "safety_score": 9.4,
+    "safety_source": "live_api",
+    "recent_crimes": 280,
     "green_space": 9.4,
     "transport_score": 6.8,
-    "housing_apps": 4812,
-    "housing_approval_rate": 83.4,
+    "housing_apps": 4866,
+    "housing_approval_rate": 76.6,
     "lat": 51.4479,
-    "lng": -0.3260
+    "lng": -0.3260,
+    "imd": {
+      "overall_decile": 8.16,
+      "income_decile": 7.72,
+      "employment_decile": 8.11,
+      "education_decile": 9.25,
+      "health_decile": 9.27,
+      "crime_decile": 6.92,
+      "housing_barriers_decile": 9.6,
+      "living_environment_decile": 2.61,
+      "population": 195165
+    }
   },
   {
-    "borough": "Wandsworth",
-    "overall_score": 81.2,
-    "ons_happiness": 7.6,
-    "safety_score": 7.8,
-    "green_space": 8.5,
-    "transport_score": 9.1,
-    "housing_apps": 8920,
-    "housing_approval_rate": 91.5,
-    "lat": 51.4567,
-    "lng": -0.1910
+    "borough": "Newham",
+    "overall_score": 64.9,
+    "ons_happiness": 7.05,
+    "estimated_benchmark": true,
+    "safety_score": 6.1,
+    "safety_source": "live_api",
+    "green_space": 7.5,
+    "transport_score": 7.9,
+    "housing_apps": 3380,
+    "housing_approval_rate": 88.6,
+    "lat": 51.5077,
+    "lng": 0.0469,
+    "imd": {
+      "overall_decile": 2.1,
+      "housing_barriers_decile": 5.3,
+      "population": 355952
+    }
   }
 ]
 ```
