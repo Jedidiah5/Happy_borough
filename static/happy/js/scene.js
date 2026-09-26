@@ -9,7 +9,10 @@ import { animate, tickTweens, easeOutCubic, easeInOutCubic, prefersReducedMotion
 import { buildLondonMap, createClouds } from './londonMap.js';
 
 const WORLD_SPAN = 46;
-const HEIGHT_PER_POINT = 0.115;
+// Heights count from HEIGHT_BASELINE so the 60-85 score band reads as clear differences.
+const HEIGHT_PER_POINT = 0.26;
+const HEIGHT_BASELINE = 45;
+const MIN_HEIGHT = 0.4;
 const TOWER_WIDTH = 1.5;
 const FOG_COLOR = 0xe4f3f1;
 const LOW_COLOR = new THREE.Color('#5bc8f0');
@@ -237,7 +240,7 @@ export function createCityScene(container, { onSelect } = {}) {
 
         ranked.forEach((b, rank) => {
             const tower = towers.get(b.borough);
-            const targetHeight = b.overall_score * HEIGHT_PER_POINT;
+            const targetHeight = Math.max((b.overall_score - HEIGHT_BASELINE) * HEIGHT_PER_POINT, MIN_HEIGHT);
             const targetColor = LOW_COLOR.clone().lerp(HIGH_COLOR, (b.overall_score - min) / range);
             const targetGlow = rank === 0 ? 0.6 : rank < 3 ? 0.4 : 0.18;
 
