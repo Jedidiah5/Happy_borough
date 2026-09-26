@@ -1,75 +1,74 @@
-# 🏛️ PlanPulse London — AI Planning Risk & Precedent Engine
+# 😊 HappyBorough London — Legal Neighborhood Vibe & Happiness Index
 
-> **Data-driven planning permission intelligence, risk scoring, and 3D precedent exploration across 181,929 Greater London housing applications (2022–2025).**
+> **Multi-factor open data fusion platform for ranking London's happiest, safest, and most livable boroughs based on your personalized lifestyle priorities.**
 
-![PlanPulse London](https://img.shields.io/badge/Platform-Greater%20London-0284C7?style=flat-square)
-![Dataset](https://img.shields.io/badge/Database-181%2C929%20Applications-10B981?style=flat-square)
-![Map Engine](https://img.shields.io/badge/Map%20Engine-Mapbox%20GL%20JS%20v3-38BDF8?style=flat-square)
-![MCP](https://img.shields.io/badge/AI%20Protocol-Model%20Context%20Protocol%20(MCP)-F59E0B?style=flat-square)
+![Platform](https://img.shields.io/badge/Platform-Greater%20London-10B981?style=flat-square)
+![Data Fusion](https://img.shields.io/badge/Open%20Data-ONS%20%2B%20Police%20%2B%20TfL%20%2B%20Planning-38BDF8?style=flat-square)
+![Architecture](https://img.shields.io/badge/Stack-Python%20%2B%20Leaflet%20%2B%20SQLite-0284C7?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-slate?style=flat-square)
 
 ---
 
 ## 📌 Overview
 
-**PlanPulse London** is an AI-powered planning feasibility and spatial analytics platform built on over 181,000 historical planning applications submitted to London borough councils between 2022 and 2025.
+Choosing where to live or invest in London is often reduced to house prices and rent costs. **HappyBorough London** changes that by fusing official UK open data benchmarks into a personalized, interactive livability and happiness engine.
 
-Whether you are evaluating a loft conversion, a residential extension, an HMO conversion, or a multi-unit infill scheme, PlanPulse evaluates council precedent, quantifies rejection risk, estimates decision timelines, and renders high-density historical applications directly in photorealistic 3D.
+By combining well-being surveys, crime statistics, public transport accessibility, and urban green canopy density with official council planning metrics, HappyBorough enables citizens, homebuyers, and urban researchers to find the neighborhood that aligns with their personal lifestyle values.
 
 ---
 
-## ✨ Key Features
+## 🌟 Key Features
 
-### 🗺️ Mapbox GL JS v3 3D Spatial Rendering
-- **Hardware-Accelerated WebGL**: Fluid 60 FPS vector map rendering across all 35 London local planning authorities.
-- **3D Building Extrusions**: London's architectural skyline rendered in realistic 3D (`fill-extrusion`) with height-based gradient shading and pitch control.
-- **Dynamic Style Switcher**: Seamless toggle between **Dark 3D**, **Night Glow**, **Satellite Imagery**, and **Streets**.
-- **Glowing Status Markers**: Custom pulsating DOM markers color-coded by application outcome:
-  - 🟢 **Permitted** (`#10B981`)
-  - 🔴 **Rejected** (`#EF4444`)
-  - 🟡 **Conditions / Withdrawn** (`#F59E0B`)
-- **Glassmorphic Precedent Cards**: Interactive popups with council references, proposal summaries, ETA to decision, and one-click deep links to official council planning portals.
-- **Interactive 3D Fly-To**: Clicking any precedent smoothly animates the camera to the property site at a 60° perspective angle.
+### 🎛️ Personalized Priority Weighting
+- **Real-Time Sliders**: Adjust relative weights across the 4 key livability dimensions:
+  - 🛡️ **Safety & Low Crime** (UK Police Open Data benchmarks)
+  - 🌳 **Parks & Green Space** (Canopy and open parkland density)
+  - 🚆 **Public Transport Accessibility** (TfL PTAL connectivity ratings)
+  - 😊 **Community Satisfaction** (ONS Personal Well-being & Life Satisfaction Survey)
+- **Instant Recalculation**: Live dynamic re-weighting and normalization so sliders always sum to 100%.
 
-### 📊 AI Planning Risk & Decision ETA Modeling
-- **Approval & Rejection Probability**: Computes predictive risk scores based on historical borough precedent, proposal scale, and keyword semantics.
-- **Decision Timelines (ETA)**: Calculates real-world council turnaround times in calendar days.
-- **Granular Filter Matrix**:
-  - **Borough**: All 35 London councils (Croydon, Barnet, Ealing, Wandsworth, Brent, Westminster, etc.).
-  - **Scale**: Small (lofts/extensions), Medium (infill/low-rise), Large (major developments 10+ units).
-  - **Keywords**: Instant chips for `extension`, `loft`, `basement`, `conversion`, `hmo`, `solar`.
-  - **Spatial Radius**: Hyper-local (1.5 km), Neighborhood (3.0 km), or Sector (5.0 km).
+### 🏆 Dynamic Borough Leaderboard
+- Real-time ranked list of top-matched London boroughs based on your current slider weights.
+- Composite **Happiness Score (0–100)** for each borough.
+- Detailed metric breakdowns: safety score, green space index, transport connectivity, and ONS life satisfaction.
+- Integrated council planning approval rates and application volumes queried live from `housing.db`.
 
-### 📈 Council Rejection Benchmarks
-- Real-time comparison of approval and refusal rates across London councils.
-- Identifies strict planning jurisdictions (e.g. Croydon at 26.5% refusal, Kingston at 25.4%, Brent at 24.9%) versus pro-development authorities (e.g. Wandsworth at 8.5%).
+### 🗺️ Interactive Spatial Map
+- Visual map view centered on Greater London.
+- Dynamic color-coded circle markers scaled by borough ranking:
+  - 🟢 **Top Match (#1)**: Vibrant Emerald
+  - 🔵 **Top Tier (#2–#3)**: Cyan Blue
+  - 🟡 **Other Boroughs**: Amber / Slate
+- **Interactive Fly-To**: Clicking any borough in the leaderboard smoothly flies the camera to that borough's coordinates and opens a rich detail popup.
 
-### 🤖 Model Context Protocol (MCP) Server
-- Exposes tools via standard JSON-RPC for AI assistants (Antigravity, Claude Desktop, Cursor):
-  - `get_borough_stats`: Retrieve aggregated application metrics for any borough.
-  - `search_precedents`: Find spatial precedents matching keyword and radius.
-  - `predict_risk`: Predict approval likelihood and estimated days.
+---
 
-### 😊 HappyBorough London Index (`happiness_server.py`)
-- Multi-factor neighborhood livability fusion prototype integrating:
-  - **ONS Well-being Survey** benchmarks
-  - **UK Police Open Data** crime & safety indices
-  - **TfL PTAL** public transport accessibility ratings
-  - **Council Planning** volume & approval rates
+## 📊 Scoring Methodology & Data Fusion
+
+HappyBorough combines multiple official UK public sector datasets:
+
+1. **ONS Personal Well-being Survey (Office for National Statistics)**: Annual benchmark measuring life satisfaction, worthwhile feelings, and happiness by local authority (scaled 0–10).
+2. **UK Police Open Data**: Crime incident rates normalized into a Safety Score (scaled 0–10).
+3. **Transport for London (TfL) PTAL**: Public Transport Accessibility Level scores measuring access to tube, rail, bus, and tram networks (scaled 0–10).
+4. **London Green Spaces & Tree Canopy**: Percentage of municipal area dedicated to public parks, nature reserves, and green infrastructure (scaled 0–10).
+5. **Council Planning Portal Dataset (`housing.db`)**: 181,929 historical planning applications (2022–2025) reflecting council development velocity and approval flexibility.
+
+### Composite Score Formula
+For any set of user weights $(w_{\text{safety}}, w_{\text{green}}, w_{\text{transport}}, w_{\text{happiness}})$ where $\sum w = 1.0$:
+
+$$\text{Score} = (10 \cdot \text{Safety} \cdot w_{\text{safety}}) + (10 \cdot \text{Green} \cdot w_{\text{green}}) + (10 \cdot \text{Transport} \cdot w_{\text{transport}}) + (10 \cdot \text{Happiness} \cdot w_{\text{happiness}})$$
 
 ---
 
 ## 🏗️ Architecture & Technology Stack
 
-| Layer | Technology | Details |
+| Component | Technology | Description |
 |---|---|---|
-| **Frontend** | Vanilla JS, HTML5, Modern CSS | Dark glassmorphism, responsive grid, micro-animations |
-| **Map Engine** | Mapbox GL JS v3.2.0 | 3D vector extrusions, custom glowing markers, camera fly-to |
-| **Data Visualization** | Chart.js 4.x | Rejection rate benchmarks & analytics |
-| **Typography** | Google Fonts | *Plus Jakarta Sans* (UI) & *JetBrains Mono* (metrics) |
-| **Backend** | Python 3 (`http.server`, `socketserver`) | Lightweight, zero external web framework dependencies |
-| **Database** | SQLite 3 (`housing.db`) | 118 MB indexed database with spatial delta bounding queries |
-| **AI Protocol** | MCP (`mcp_server.py`) | Model Context Protocol tools for AI agent integration |
+| **Backend** | Python 3 (`http.server`, `socketserver`) | Lightweight server with zero external framework dependencies |
+| **Frontend** | Vanilla JS & HTML5 | Dark mode glassmorphic UI, responsive two-column grid |
+| **Mapping** | Leaflet 1.9.4 & OpenStreetMap | Lightweight vector circles, popup cards, and animated fly-to |
+| **Typography** | Google Fonts | *Inter* (clean, modern legibility) |
+| **Database** | SQLite 3 (`housing.db`) | Cross-references planning volume and approval rate per borough |
 
 ---
 
@@ -77,12 +76,13 @@ Whether you are evaluating a loft conversion, a residential extension, an HMO co
 
 ```
 NewSpeak/
-├── server.py               # Main PlanPulse Mapbox 3D application & REST API server (Port 8080)
+├── happiness_server.py     # HappyBorough application server & API (Port 8085)
+├── server.py               # Complementary PlanPulse 3D planning feasibility server (Port 8080)
 ├── mcp_server.py           # Model Context Protocol (MCP) server for AI assistants
-├── happiness_server.py     # HappyBorough neighborhood vibe & livability server (Port 8085)
-├── convert_db.py           # Database build & index script (CSV -> SQLite)
-├── housing.db              # 118MB indexed SQLite database (181,929 records)
+├── convert_db.py           # Data ingestion & indexing script (CSV -> SQLite)
+├── housing.db              # 118MB indexed SQLite database (181,929 applications)
 ├── .env.example            # Environment configuration template
+├── .gitignore              # Git ignore rules for bytecode & secrets
 └── README.md               # Project documentation
 ```
 
@@ -91,148 +91,89 @@ NewSpeak/
 ## 🚀 Quick Start Guide
 
 ### 1. Prerequisites
-- **Python 3.9+** (no virtualenv or pip packages required for the core server!)
-- A free **Mapbox Public Access Token** ([get one here](https://account.mapbox.com/access-tokens/))
+- **Python 3.9+** (uses standard library modules only; no pip dependencies required!)
 
-### 2. Configure Mapbox Token *(Optional)*
-You can either set the token in your environment or enter it directly in the in-app setup modal:
+### 2. Launch the HappyBorough Server
 
 ```bash
-cp .env.example .env
-# Edit .env and paste your Mapbox public token:
-# MAPBOX_ACCESS_TOKEN=pk.eyJ1...
+python3 happiness_server.py
 ```
 
-Alternatively, export it in your shell:
-```bash
-export MAPBOX_ACCESS_TOKEN="pk.your_token_here"
-```
+### 3. Open in Your Browser
+Navigate to:
+👉 **http://localhost:8085**
 
-### 3. Launch PlanPulse London
-
-```bash
-python3 server.py
-```
-
-Open your browser to:
-👉 **http://localhost:8080**
-
-*(If no token was provided in `.env`, a friendly setup prompt will appear where you can paste your token directly into the UI—it is saved in `localStorage` for future sessions).*
-
----
-
-## 🔌 Model Context Protocol (MCP) Setup
-
-To connect PlanPulse directly into **Claude Desktop**, **Antigravity**, or **Cursor**, add the following to your MCP configuration file:
-
-```json
-{
-  "mcpServers": {
-    "planpulse": {
-      "command": "python3",
-      "args": [
-        "/Users/nashyosh/Desktop/Personal Project/NewSpeak/mcp_server.py"
-      ]
-    }
-  }
-}
-```
-
-### Available MCP Tools:
-1. `get_borough_stats(borough_name)`: Returns total applications, approvals, refusals, rejection rate %, and average decision days.
-2. `search_precedents(lat, lng, keyword, radius_km, limit)`: Returns nearest historical applications with full planning portal links and outcomes.
-3. `predict_risk(borough, app_size, keyword)`: Returns approval probability percentage, rejection risk, and sample size.
+Adjust the sliders on the left (Safety, Green Space, Transport, Well-being) to explore how the rankings and map update dynamically!
 
 ---
 
 ## 📡 REST API Reference
 
-The core server (`server.py`) provides fast JSON endpoints:
+The server exposes a clean JSON endpoint for programmatic integration:
 
-### 1. Borough Benchmarks
+### Get Weighted Borough Rankings
+
 ```http
-GET /api/boroughs
+GET /api/rankings?w_safety=0.35&w_green=0.25&w_transport=0.20&w_happiness=0.20
 ```
-**Response:**
+
+#### Query Parameters:
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `w_safety` | `float` | `0.3` | Relative weight for safety & low crime (0.0 – 1.0) |
+| `w_green` | `float` | `0.3` | Relative weight for parks & green space (0.0 – 1.0) |
+| `w_transport` | `float` | `0.2` | Relative weight for public transport access (0.0 – 1.0) |
+| `w_happiness` | `float` | `0.2` | Relative weight for ONS community happiness (0.0 – 1.0) |
+
+#### Sample Response:
 ```json
 [
   {
-    "borough": "Croydon",
-    "total": 9914,
-    "permitted": 6895,
-    "rejected": 2630,
-    "rejection_rate": 26.5,
-    "approval_rate": 69.5,
-    "avg_days": 83.6,
-    "dwellings": 61783,
-    "lat": 51.366,
-    "lng": -0.0962
-  }
-]
-```
-
-### 2. AI Risk Prediction
-```http
-GET /api/predict?borough=Croydon&app_size=Small&keyword=extension
-```
-**Response:**
-```json
-{
-  "borough": "Croydon",
-  "app_size": "Small",
-  "keyword": "extension",
-  "sample_size": 5823,
-  "approval_probability": 76.2,
-  "rejection_risk": 21.2,
-  "risk_level": "MEDIUM RISK",
-  "risk_color": "#F59E0B",
-  "estimated_days": 72.6
-}
-```
-
-### 3. Spatial Precedents
-```http
-GET /api/precedents?lat=51.3660&lng=-0.0962&keyword=extension&radius=2.5&limit=25
-```
-**Response:**
-```json
-[
+    "borough": "Richmond upon Thames",
+    "overall_score": 82.5,
+    "ons_happiness": 7.7,
+    "safety_score": 8.8,
+    "green_space": 9.4,
+    "transport_score": 6.8,
+    "housing_apps": 4812,
+    "housing_approval_rate": 83.4,
+    "lat": 51.4479,
+    "lng": -0.3260
+  },
   {
-    "name": "Croydon/23/00736/HSE",
-    "area_name": "Croydon",
-    "status": "Permitted",
-    "decision": "Application Permitted",
-    "days_to_decision": 54.0,
-    "url": "https://publicaccess3.croydon.gov.uk/online-applications/...",
-    "description": "Erection of single storey rear extension...",
-    "app_size": "Small",
-    "lat": 51.365252,
-    "lng": -0.096522
+    "borough": "Wandsworth",
+    "overall_score": 81.2,
+    "ons_happiness": 7.6,
+    "safety_score": 7.8,
+    "green_space": 8.5,
+    "transport_score": 9.1,
+    "housing_apps": 8920,
+    "housing_approval_rate": 91.5,
+    "lat": 51.4567,
+    "lng": -0.1910
   }
 ]
 ```
 
 ---
 
-## 🗄️ Database Rebuilding *(Optional)*
+## 💡 Typical Use Cases
 
-If you ever update the source CSV dataset (`foundations_london_housing_2022_2025_*.csv`):
-
-```bash
-python3 convert_db.py
-```
-This parses the 181k+ records and creates the optimized indexes (`idx_borough`, `idx_lat_lng`, `idx_status`, `idx_app_size`) in ~15 seconds.
+- **Homebuyers & Renters**: Discover London neighborhoods that match your lifestyle instead of relying only on property price filters.
+- **Relocators**: Moving to London from abroad or other UK cities and trying to understand borough trade-offs (e.g. green space vs. central tube lines).
+- **Families**: Prioritize safety ratings and parkland density to shortlist council areas.
+- **Urban Planners & Policy Teams**: Assess the relationship between neighborhood well-being, transit accessibility, and housing delivery rates.
 
 ---
 
-## 💡 Use Cases
-- **Architects & Planning Consultants**: Screen proposal feasibility and council risk prior to submission.
-- **Property Developers**: Identify favorable boroughs and uncover hyper-local approved precedents to support design and access statements.
-- **Homeowners**: Assess realistic timelines and refusal risks for extensions, dormers, and loft conversions.
-- **Civic Tech & Housing Advocates**: Track council planning velocity, housing delivery figures, and refusal patterns across London.
+## 🔗 Related Components in This Repository
+
+- **[server.py](server.py)**: PlanPulse London — a hyper-local planning feasibility and 3D precedent engine powered by Mapbox GL JS v3 and 181k+ council records.
+- **[mcp_server.py](mcp_server.py)**: Model Context Protocol (MCP) server enabling AI assistants (Claude, Antigravity, Cursor) to query borough statistics and precedents via natural language.
 
 ---
 
 ## 📄 License
-This project is open-source and licensed under the [MIT License](LICENSE).
-Planning application data is published under the UK Open Government Licence (OGL).
+
+This project is licensed under the [MIT License](LICENSE).
+Public benchmarks are derived from official UK Open Data (ONS, UK Police Open Data, TfL) licensed under the [Open Government Licence (OGL)](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/).
