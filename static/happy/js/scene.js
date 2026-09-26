@@ -136,7 +136,7 @@ export function createCityScene(container) {
         return new THREE.Mesh(geometry, material);
     }
 
-    function moveBeamTo(name) {
+    function moveBeamTo(name, delay = 0) {
         if (name === beamOwner) return;
         beamOwner = name;
         const tower = towers.get(name);
@@ -147,6 +147,7 @@ export function createCityScene(container) {
         beam.material.opacity = 0;
         cancelBeamFade = animate({
             duration: 500,
+            delay,
             onUpdate: (t) => {
                 beam.material.opacity = 0.55 * t;
             },
@@ -228,11 +229,15 @@ export function createCityScene(container) {
     }
 
     // ranked: boroughs sorted by overall_score (descending).
-    function update(ranked, { animated = true, duration = 600 } = {}) {
+    // stagger (ms): spreads start times west -> east, used for the load-in rise.
+    function update(ranked, { animated = true, duration = 600, stagger = 0 } = {}) {
         syncTowers(ranked);
         const scores = ranked.map((b) => b.overall_score);
         const min = Math.min(...scores);
         const range = Math.max(...scores) - min || 1;
+        const xs = [...towers.values()].map((t) => t.group.position.x);
+        const minX = Math.min(...xs);
+        const spanX = Math.max(...xs) - minX || 1;
 
         ranked.forEach((b, rank) => {
             const tower = towers.get(b.borough);
@@ -259,6 +264,7 @@ export function createCityScene(container) {
             const fromGlow = material.emissiveIntensity;
             tower.cancel = animate({
                 duration,
+                delay: (stagger * (tower.group.position.x - minX)) / spanX,
                 ease: easeOutCubic,
                 onUpdate: (t) => {
                     setTowerHeight(tower, fromHeight + (targetHeight - fromHeight) * t);
@@ -269,11 +275,11 @@ export function createCityScene(container) {
                 },
             });
         });
-        updateBeam(ranked);
+        updateBeam(ranked, animated ? stagger + duration * 0.6 : 0);
     }
 
-    function updateBeam(ranked) {
-        if (ranked.length) moveBeamTo(ranked[0].borough);
+    function updateBeam(ranked, delay) {
+        if (ranked.length) moveBeamTo(ranked[0].borough, delay);
     }
 
     function resize() {

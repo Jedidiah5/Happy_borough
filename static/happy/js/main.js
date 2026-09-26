@@ -81,9 +81,10 @@ async function boot() {
 
     setSyncStatus('pending', 'Loading live data…');
     state.boroughs = await fetchRankings(state.weights);
-    render({ animated: false });
+    render({ animated: true, duration: 900, stagger: 700 });
     setSyncStatus('ok', '✓ Live data loaded');
     document.getElementById('loading').classList.add('is-hidden');
+    document.body.classList.add('is-ready');
 }
 
 boot().catch((err) => {

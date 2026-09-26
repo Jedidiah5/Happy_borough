@@ -252,6 +252,74 @@ input[type=range]:focus-visible { box-shadow: 0 0 0 2px var(--mint); }
 .source-live { background: rgba(16, 185, 129, 0.16); color: #6ee7b7; }
 .source-fallback { background: rgba(245, 158, 11, 0.16); color: var(--amber); }
 
+.hero {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    z-index: 5;
+    width: min(760px, 90vw);
+    text-align: center;
+    pointer-events: none;
+    transform: translate(-50%, -60%);
+    transform-origin: top center;
+    animation: hero-in 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+    transition: top 1.1s cubic-bezier(0.65, 0, 0.35, 1), transform 1.1s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+.hero h1 {
+    font-size: clamp(2rem, 4.4vw, 3.5rem);
+    font-weight: 800;
+    line-height: 1.08;
+    letter-spacing: -0.03em;
+    text-shadow: 0 4px 40px rgba(0, 0, 0, 0.8);
+}
+
+.hero h1 em {
+    font-style: normal;
+    background: linear-gradient(90deg, var(--mint), #7dd3fc 60%, var(--indigo));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.hero p {
+    margin-top: 14px;
+    font-size: 1.02rem;
+    color: var(--text-dim);
+    transition: opacity 0.5s;
+}
+
+body.is-ready .hero {
+    top: 20px;
+    transform: translate(-50%, 0) scale(0.46);
+}
+
+body.is-ready .hero p { opacity: 0; }
+
+@keyframes hero-in {
+    from { opacity: 0; transform: translate(-50%, -45%); }
+    to { opacity: 1; transform: translate(-50%, -60%); }
+}
+
+.panel-left,
+.panel-right {
+    opacity: 0;
+    transition: opacity 0.6s 0.5s, transform 0.6s 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.panel-left { transform: translateX(-16px); }
+.panel-right { transform: translateX(16px); }
+
+body.is-ready .panel-left,
+body.is-ready .panel-right {
+    opacity: 1;
+    transform: none;
+}
+
+@media (max-width: 1280px) {
+    .badge { display: none; }
+}
+
 .loading {
     position: fixed;
     left: 50%;
