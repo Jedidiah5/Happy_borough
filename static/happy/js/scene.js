@@ -14,7 +14,6 @@ const TOWER_WIDTH = 1.5;
 const FOG_COLOR = 0xe4f3f1;
 const LOW_COLOR = new THREE.Color('#5bc8f0');
 const HIGH_COLOR = new THREE.Color('#8cc63f');
-const BEAM_COLOR = new THREE.Color('#ffc93c');
 const INK = 0x3b2a20;
 
 function skyTexture() {
@@ -123,53 +122,26 @@ export function createCityScene(container, { onSelect } = {}) {
     const towers = new Map();
     let projectorKey = '';
 
-    const beam = createBeam();
-    beam.visible = false;
-    scene.add(beam);
-    let beamOwner = null;
-    let cancelBeamFade = null;
+    let visibleNames = null;
+    let labelsOn = true;
 
-    function createBeam() {
-        const canvas = document.createElement('canvas');
-        canvas.width = 4;
-        canvas.height = 128;
-        const ctx = canvas.getContext('2d');
-        const gradient = ctx.createLinearGradient(0, 0, 0, 128);
-        gradient.addColorStop(0, 'rgba(0,0,0,1)');
-        gradient.addColorStop(0.6, 'rgba(90,90,90,1)');
-        gradient.addColorStop(1, 'rgba(255,255,255,1)');
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, 4, 128);
-        const geometry = new THREE.CylinderGeometry(0.55, 0.95, 70, 32, 1, true);
-        geometry.translate(0, 35, 0);
-        const material = new THREE.MeshBasicMaterial({
-            color: BEAM_COLOR.clone(),
-            alphaMap: new THREE.CanvasTexture(canvas),
-            transparent: true,
-            opacity: 0,
-            depthWrite: false,
-            side: THREE.DoubleSide,
-            fog: false,
-        });
-        return new THREE.Mesh(geometry, material);
+    function applyVisibility() {
+        for (const [name, tower] of towers) {
+            const shown = !visibleNames || visibleNames.has(name);
+            tower.group.visible = shown;
+            tower.label.visible = shown && labelsOn;
+        }
     }
 
-    function moveBeamTo(name, delay = 0) {
-        if (name === beamOwner) return;
-        beamOwner = name;
-        const tower = towers.get(name);
-        if (!tower) return;
-        if (cancelBeamFade) cancelBeamFade();
-        beam.position.copy(tower.group.position);
-        beam.visible = true;
-        beam.material.opacity = 0;
-        cancelBeamFade = animate({
-            duration: 500,
-            delay,
-            onUpdate: (t) => {
-                beam.material.opacity = 0.55 * t;
-            },
-        });
+    // names: Set of boroughs to show, or null for all.
+    function setVisible(names) {
+        visibleNames = names;
+        applyVisibility();
+    }
+
+    function setLabelsVisible(on) {
+        labelsOn = on;
+        applyVisibility();
     }
 
     function createTower(borough, project) {
@@ -301,11 +273,7 @@ export function createCityScene(container, { onSelect } = {}) {
                 },
             });
         });
-        updateBeam(ranked, animated ? stagger + duration * 0.6 : 0);
-    }
-
-    function updateBeam(ranked, delay) {
-        if (ranked.length) moveBeamTo(ranked[0].borough, delay);
+        applyVisibility();
     }
 
     const raycaster = new THREE.Raycaster();
@@ -319,7 +287,8 @@ export function createCityScene(container, { onSelect } = {}) {
             -((event.clientY - rect.top) / rect.height) * 2 + 1
         );
         raycaster.setFromCamera(pointer, camera);
-        const hit = raycaster.intersectObjects([...towers.values()].map((t) => t.mesh))[0];
+        const pickable = [...towers.values()].filter((t) => t.group.visible).map((t) => t.mesh);
+        const hit = raycaster.intersectObjects(pickable)[0];
         return hit ? hit.object.userData.borough : null;
     }
 
@@ -467,5 +436,5 @@ export function createCityScene(container, { onSelect } = {}) {
     }
     requestAnimationFrame(frame);
 
-    return { update, focusOn, resetView };
+    return { update, focusOn, resetView, setVisible, setLabelsVisible };
 }

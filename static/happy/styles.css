@@ -17,7 +17,6 @@
     --tube-blue: #1c3f94;
     --sun: #ffc93c;
     --radius: 20px;
-    --font-display: 'DM Serif Display', Georgia, serif;
     --font-ui: 'Nunito', system-ui, sans-serif;
 }
 
@@ -112,7 +111,7 @@ html, body {
     box-shadow: 0 3px 0 rgba(59, 42, 32, 0.2);
 }
 
-.logo-bar span { color: var(--sun); }
+
 
 .badge {
     padding: 5px 12px;
@@ -169,8 +168,8 @@ html, body {
 
 .panel-sub {
     margin: 6px 0 14px;
-    font-family: var(--font-display);
-    font-size: 1.02rem;
+    font-size: 0.86rem;
+    font-weight: 700;
     color: var(--ink-soft);
 }
 
@@ -187,7 +186,7 @@ html, body {
 }
 
 .slider-row small { color: var(--ink-faint); font-size: 0.7rem; font-weight: 600; margin-left: 2px; }
-.slider-row strong { font-variant-numeric: tabular-nums; color: var(--blue-deep); font-weight: 900; }
+.slider-row strong { font-variant-numeric: tabular-nums; color: var(--ink); font-weight: 900; }
 
 input[type=range] {
     --fill: 50%;
@@ -302,13 +301,13 @@ input[type=range]:focus-visible { box-shadow: 0 0 0 3px var(--blue-soft), 0 0 0 
 .lb-name { font-size: 0.9rem; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .lb-score {
-    font-family: var(--font-display);
-    font-size: 1.15rem;
+    font-size: 1rem;
+    font-weight: 900;
     font-variant-numeric: tabular-nums;
-    color: var(--ink-soft);
+    color: var(--ink);
 }
 
-.lb-row.is-top .lb-score { color: var(--green-deep); }
+
 
 .source-tag {
     display: inline-block;
@@ -364,10 +363,10 @@ input[type=range]:focus-visible { box-shadow: 0 0 0 3px var(--blue-soft), 0 0 0 
     font-weight: 900;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--tube-red);
+    color: var(--ink-soft);
 }
 
-.detail-name { margin: 2px 0 4px; font-family: var(--font-display); font-size: 1.6rem; font-weight: 400; line-height: 1.1; }
+.detail-name { margin: 2px 0 4px; font-size: 1.4rem; font-weight: 900; line-height: 1.15; }
 
 .bars { margin: 12px 0 10px; display: grid; gap: 8px; }
 
@@ -440,8 +439,8 @@ input[type=range]:focus-visible { box-shadow: 0 0 0 3px var(--blue-soft), 0 0 0 
 .dx-wide { grid-column: 1 / -1; }
 .dx-label { font-size: 0.68rem; font-weight: 700; color: var(--ink-soft); letter-spacing: 0.02em; }
 .dx-label small { font-size: 0.62rem; }
-.dx-value { font-family: var(--font-display); font-size: 1.3rem; font-weight: 400; color: var(--ink); font-variant-numeric: tabular-nums; }
-.dx-value small { font-family: var(--font-ui); font-size: 0.68rem; font-weight: 700; color: var(--ink-soft); margin-left: 2px; }
+.dx-value { font-size: 1.15rem; font-weight: 900; color: var(--ink); font-variant-numeric: tabular-nums; }
+.dx-value small { font-size: 0.68rem; font-weight: 700; color: var(--ink-soft); margin-left: 2px; }
 .dx-sub { font-size: 0.66rem; font-weight: 600; color: var(--ink-soft); }
 .dx-est {
     padding: 0 6px;
@@ -487,21 +486,12 @@ input[type=range]:focus-visible { box-shadow: 0 0 0 3px var(--blue-soft), 0 0 0 
 }
 
 .hero h1 {
-    font-family: var(--font-display);
-    font-size: clamp(2.2rem, 4.8vw, 3.9rem);
-    font-weight: 400;
+    font-size: clamp(2rem, 4.4vw, 3.5rem);
+    font-weight: 900;
+    letter-spacing: -0.02em;
     line-height: 1.05;
     color: var(--ink);
     text-shadow: 0 2px 0 #fff, 0 0 30px rgba(255, 255, 255, 0.9);
-}
-
-.hero h1 em {
-    font-style: italic;
-    background: linear-gradient(90deg, var(--green-deep), var(--green) 45%, var(--blue-deep));
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    text-shadow: none;
 }
 
 .hero p {
@@ -543,6 +533,97 @@ body.is-ready .panel-right {
 @media (max-width: 1280px) {
     .badge { display: none; }
 }
+
+.toolbar {
+    position: fixed;
+    top: 84px;
+    left: 50%;
+    z-index: 12;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    width: max-content;
+    max-width: calc(100vw - 700px);
+    transform: translateX(-50%);
+    opacity: 0;
+    transition: opacity 0.6s 0.7s;
+}
+
+body.is-ready .toolbar { opacity: 1; }
+
+.seg {
+    display: flex;
+    padding: 3px;
+    border-radius: 999px;
+    background: var(--paper-solid);
+    border: 2px solid var(--ink);
+    box-shadow: 0 3px 0 rgba(59, 42, 32, 0.18);
+}
+
+.seg button,
+.chip {
+    padding: 5px 12px;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--ink-soft);
+    font: inherit;
+    font-size: 0.78rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+
+.seg button:hover,
+.chip:hover { color: var(--ink); background: var(--blue-soft); }
+.seg button.is-on { background: var(--ink); color: #fff; }
+
+.chip {
+    background: var(--paper-solid);
+    border: 2px solid var(--ink);
+    box-shadow: 0 3px 0 rgba(59, 42, 32, 0.18);
+}
+
+.chip.is-on { background: var(--green-soft); color: var(--ink); }
+.seg button:focus-visible,
+.chip:focus-visible { outline: 3px solid var(--blue); outline-offset: 1px; }
+
+body.leaderboard-hidden .panel-right {
+    opacity: 0;
+    transform: translateX(24px);
+    pointer-events: none;
+    transition-delay: 0s;
+}
+
+.lb-row.is-filtered { opacity: 0.38; }
+
+#flatmap {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    background: var(--cream);
+}
+
+#flatmap[hidden] { display: none; }
+#flatmap .leaflet-tile-pane { filter: sepia(0.22) saturate(0.95) brightness(1.04); }
+#flatmap .leaflet-control-zoom { margin: 0 0 24px 340px; }
+.leaflet-bottom.leaflet-left { bottom: 0; }
+
+body.mode-map .hero h1 { text-shadow: 0 2px 0 #fff, 0 0 18px #fff, 0 0 30px #fff; }
+
+.map-tooltip {
+    padding: 6px 10px;
+    border: 2px solid var(--ink);
+    border-radius: 12px;
+    background: var(--paper-solid);
+    color: var(--ink);
+    font-family: var(--font-ui);
+    font-size: 0.8rem;
+    box-shadow: 0 3px 0 rgba(59, 42, 32, 0.2);
+}
+
+.map-tooltip::before { display: none; }
 
 .tower-tooltip {
     position: fixed;
@@ -589,6 +670,8 @@ body.is-ready .panel-right {
         transform: none;
     }
     .detail-card { order: -1; animation: none; }
+    .toolbar { position: relative; top: auto; left: auto; max-width: none; transform: none; }
+    #flatmap { height: 46vh; bottom: auto; }
     .panel-right { max-height: none; }
     .leaderboard { overflow: visible; }
     .loading { position: fixed; }

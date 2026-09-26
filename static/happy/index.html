@@ -6,7 +6,9 @@
     <title>HappyBorough London — Legal Neighborhood Vibe & Happiness Index</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
     <link rel="stylesheet" href="/static/happy/styles.css">
     <script type="importmap">
     {
@@ -19,6 +21,7 @@
 </head>
 <body>
     <div id="scene" aria-hidden="true"></div>
+    <div id="flatmap" hidden></div>
 
     <header class="topbar">
         <div class="logo"><span class="roundel"></span><span class="logo-bar">HappyBorough <span>London</span></span></div>
@@ -26,9 +29,25 @@
     </header>
 
     <div class="hero">
-        <h1>Where in London would you be <em>happiest</em>?</h1>
+        <h1>Where in London would you be happiest?</h1>
         <p>Weigh safety, green space, transport, wellbeing, housing access and rent. Every borough re-ranks live.</p>
     </div>
+
+    <nav class="toolbar" aria-label="View options">
+        <div class="seg" role="group" aria-label="Map style">
+            <button type="button" data-mode="city" class="is-on">🏙️ 3D city</button>
+            <button type="button" data-mode="map">🗺️ Map</button>
+        </div>
+        <div class="seg" role="group" aria-label="Show boroughs">
+            <button type="button" data-filter="all" class="is-on">All</button>
+            <button type="button" data-filter="top5">Top 5</button>
+            <button type="button" data-filter="top10">Top 10</button>
+            <button type="button" data-filter="bottom5">Bottom 5</button>
+        </div>
+        <button type="button" class="chip" id="toggle-live" aria-pressed="false">● Live police only</button>
+        <button type="button" class="chip is-on" id="toggle-labels" aria-pressed="true">Labels</button>
+        <button type="button" class="chip is-on" id="toggle-leaderboard" aria-pressed="true">🏆 Leaderboard</button>
+    </nav>
 
     <aside class="panel panel-left" id="controls">
         <h2 class="panel-title">Your priorities</h2>
