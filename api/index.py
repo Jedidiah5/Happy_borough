@@ -7,8 +7,8 @@ if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 
 # Support selecting which application to serve via APP_CHOICE environment variable
-# Defaults to server.py (PlanPulse), or set APP_CHOICE=happiness for HappyBorough
-app_choice = os.environ.get('APP_CHOICE', 'server').strip().lower()
+# Defaults to happiness_server.py (HappyBorough), or set APP_CHOICE=server for PlanPulse
+app_choice = os.environ.get('APP_CHOICE', 'happiness').strip().lower()
 
 if 'happiness' in app_choice:
     from happiness_server import HappinessHandler as SelectedHandler

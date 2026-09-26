@@ -1,8 +1,10 @@
 {
   "version": 2,
+  "regions": ["lhr1"],
   "functions": {
     "api/index.py": {
-      "includeFiles": "static/**"
+      "includeFiles": "{static/**,data/*.json,housing.db}",
+      "maxDuration": 30
     }
   },
   "rewrites": [

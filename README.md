@@ -165,7 +165,9 @@ The first load takes a few seconds while live police data is fetched concurrentl
 An internet connection is needed for the Three.js and Google Fonts CDNs.
 
 ### 4. Deploy (optional)
-- **Vercel**: set the environment variable `APP_CHOICE=happiness`. `vercel.json` routes every request to `api/index.py` and bundles `static/**`.
+- **Vercel**: import the repo (framework preset **Other**, no build command) or run `vercel --prod`. `vercel.json` routes every request to `api/index.py` (London region `lhr1`, 30 s max duration) and bundles `static/`, `data/*.json` and `housing.db`; `.vercelignore` keeps the raw CSV/GeoJSON sources and build scripts out of the bundle so it stays under the 250 MB function limit.
+  - **Enable Git LFS** (Project → Settings → Git → Git LFS) before deploying from Git — otherwise `housing.db` is checked out as an LFS pointer, and planning stats and ward search fall back to placeholders (a warning is logged). CLI deploys upload your local copy, so run `git lfs pull` first.
+  - Serves HappyBorough by default. Set `APP_CHOICE=server` to serve PlanPulse instead (which also needs `MAPBOX_ACCESS_TOKEN`).
 - **Docker**: `docker build -t happyborough . && docker run -p 8080:8080 -e APP_FILE=happiness_server.py happyborough`
 
 ---

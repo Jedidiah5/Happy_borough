@@ -10,6 +10,8 @@ import time
 import threading
 import mimetypes
 import math
+import functools
+import pathlib
 import concurrent.futures
 
 # Some Windows terminals default stdout to a legacy codepage (cp1252) that
@@ -19,7 +21,7 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() != 'utf-8':
     sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 
 PORT = int(os.environ.get('PORT', 8085))
-DB_PATH = 'housing.db'
+DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'housing.db')
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
 # Explicit types: Windows registry can map .js to text/plain.
 STATIC_TYPES = {
@@ -263,25 +265,63 @@ HOUSING_DB_AREA_NAME_ALIASES = {
 }
 
 
-def get_housing_metrics(borough_name):
-    if not os.path.exists(DB_PATH):
-        return {"total_apps": 5000, "approval_rate": 80.0}
-    query_name = HOUSING_DB_AREA_NAME_ALIASES.get(borough_name, borough_name)
+def _housing_db_available():
+    # A checkout without `git lfs pull` (e.g. a Vercel project with Git LFS
+    # disabled) leaves a ~130-byte LFS pointer text file in place of the DB.
     try:
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-        c.execute('''
-            SELECT COUNT(*) as total,
-                   SUM(CASE WHEN status IN ('Permitted', 'Conditions') THEN 1 ELSE 0 END) as permitted
+        with open(DB_PATH, 'rb') as f:
+            if f.read(16) == b'SQLite format 3\x00':
+                return True
+        print(f"⚠️ {DB_PATH} is not a SQLite database (Git LFS pointer?). Run `git lfs pull`, or enable Git LFS in the Vercel project settings.")
+    except OSError:
+        pass
+    return False
+
+
+HOUSING_DB_AVAILABLE = _housing_db_available()
+
+
+def connect_housing_db():
+    # Read-only + immutable: the DB is static, and serverless filesystems
+    # (Vercel's /var/task) are read-only, so SQLite must not try to lock or
+    # write journal files next to it.
+    return sqlite3.connect(pathlib.Path(DB_PATH).as_uri() + '?mode=ro&immutable=1', uri=True)
+
+
+@functools.lru_cache(maxsize=1)
+def planning_counts_by_area():
+    # One full-table pass instead of one `LIKE '%name%'` scan per borough:
+    # 33 scans of the 118MB table took ~20s, which every serverless cold
+    # start would otherwise pay on its first /api/rankings request.
+    conn = connect_housing_db()
+    try:
+        return conn.execute('''
+            SELECT LOWER(area_name),
+                   COUNT(*),
+                   SUM(CASE WHEN status IN ('Permitted', 'Conditions') THEN 1 ELSE 0 END)
             FROM applications
-            WHERE LOWER(area_name) LIKE LOWER(?)
-        ''', (f"%{query_name}%",))
-        row = c.fetchone()
+            WHERE area_name IS NOT NULL
+            GROUP BY LOWER(area_name)
+        ''').fetchall()
+    finally:
         conn.close()
-        if row and row[0] > 0:
+
+
+@functools.lru_cache(maxsize=None)
+def get_housing_metrics(borough_name):
+    if not HOUSING_DB_AVAILABLE:
+        return {"total_apps": 5000, "approval_rate": 80.0}
+    needle = HOUSING_DB_AREA_NAME_ALIASES.get(borough_name, borough_name).lower()
+    try:
+        total = permitted = 0
+        for area_name, count, permitted_count in planning_counts_by_area():
+            if needle in area_name:
+                total += count
+                permitted += permitted_count
+        if total > 0:
             return {
-                "total_apps": row[0],
-                "approval_rate": round((row[1] / row[0]) * 100, 1)
+                "total_apps": total,
+                "approval_rate": round((permitted / total) * 100, 1)
             }
     except Exception as e:
         print(f"Housing metrics query note: {e}")
@@ -396,9 +436,9 @@ def geocode_search(query):
         pass
 
     # 3. Database Search in housing.db (London Wards and Area names)
-    if os.path.exists(DB_PATH):
+    if HOUSING_DB_AVAILABLE:
         try:
-            conn = sqlite3.connect(DB_PATH)
+            conn = connect_housing_db()
             c = conn.cursor()
             c.execute('''
                 SELECT ward_name, area_name, AVG(lat), AVG(lng), COUNT(*) as cnt

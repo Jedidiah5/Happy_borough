@@ -1,0 +1,21 @@
+# Keeps the Python function bundle under Vercel's 250 MB limit: only
+# api/, the two servers, static/, data/*.json and housing.db are needed at runtime.
+
+# Secrets / local tooling
+.env
+.env.local
+.claude
+__pycache__
+*.py[cod]
+
+# Raw source data, only used by the build_*.py scripts (~140 MB)
+*.csv
+data/*.geojson
+
+# Offline build / ingestion scripts and non-Vercel deploy files
+build_*.py
+convert_db.py
+mcp_server.py
+Dockerfile
+.dockerignore
+README.md

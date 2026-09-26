@@ -7,6 +7,9 @@ __pycache__/
 .env
 .env.local
 
+# Vercel CLI project link
+.vercel
+
 # macOS metadata
 .DS_Store
 .DS_Store?

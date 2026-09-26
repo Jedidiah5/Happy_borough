@@ -5,9 +5,10 @@ import sqlite3
 import urllib.parse
 import os
 import math
+import pathlib
 
 PORT = int(os.environ.get('PORT', 8080))
-DB_PATH = 'housing.db'
+DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'housing.db')
 
 def load_env():
     """Load key-value pairs from .env if present."""
@@ -27,7 +28,8 @@ load_env()
 
 def query_db(query, params=()):
     try:
-        conn = sqlite3.connect(DB_PATH)
+        # Read-only + immutable so it works on read-only serverless filesystems.
+        conn = sqlite3.connect(pathlib.Path(DB_PATH).as_uri() + '?mode=ro&immutable=1', uri=True)
         conn.row_factory = sqlite3.Row
         c = conn.cursor()
         c.execute(query, params)
