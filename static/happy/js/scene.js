@@ -35,17 +35,22 @@ function skyTexture() {
     return texture;
 }
 const AUTO_ROTATE_RESUME_MS = 6000;
-// Below this canvas width all 33 labels overlap into an unreadable pile, so
-// only the top few (plus the selected tower) keep theirs.
-const COMPACT_LABELS_BELOW_PX = 700;
+// On a canvas this narrow or short all 33 labels overlap into an unreadable
+// pile, so only the top few (plus the selected tower) keep theirs.
+const COMPACT_LABELS_BELOW_WIDTH_PX = 700;
+const COMPACT_LABELS_BELOW_HEIGHT_PX = 500;
 const COMPACT_LABEL_COUNT = 5;
+const wantsCompactLabels = (w, h) => w < COMPACT_LABELS_BELOW_WIDTH_PX || h < COMPACT_LABELS_BELOW_HEIGHT_PX;
 // Camera minus target at the default (landscape) home view.
 const HOME_OFFSET = new THREE.Vector3(0, 36, 64);
 // Portrait screens: back off until this many world units fit across (the map
 // is WORLD_SPAN wide, so its outer edges crop a little), and look down more
 // steeply so the map fills the tall screen instead of a thin strip.
-const PORTRAIT_FIT_WIDTH = 38;
-const PORTRAIT_ELEVATION_DEG = 44;
+const PORTRAIT_FIT_WIDTH = 42;
+const PORTRAIT_ELEVATION_DEG = 46;
+// Clouds drift at fly-to camera height around the map's edge; any cloud this
+// close to the camera's line of sight is hidden so it can't white out the view.
+const CLOUD_CLEARANCE = 7;
 
 function makeProjector(boroughs) {
     const lat0 = boroughs.reduce((s, b) => s + b.lat, 0) / boroughs.length;
@@ -139,7 +144,7 @@ export function createCityScene(container, { onSelect } = {}) {
 
     let visibleNames = null;
     let labelsOn = true;
-    let compactLabels = container.clientWidth < COMPACT_LABELS_BELOW_PX;
+    let compactLabels = wantsCompactLabels(container.clientWidth, container.clientHeight);
     let selected = null;
 
     function applyVisibility() {
@@ -470,15 +475,26 @@ export function createCityScene(container, { onSelect } = {}) {
         renderer.setSize(w, h);
         labelRenderer.setSize(w, h);
         composer.setSize(w, h);
-        if (compactLabels !== w < COMPACT_LABELS_BELOW_PX) {
-            compactLabels = w < COMPACT_LABELS_BELOW_PX;
+        if (compactLabels !== wantsCompactLabels(w, h)) {
+            compactLabels = wantsCompactLabels(w, h);
             applyVisibility();
         }
     }
     new ResizeObserver(resize).observe(container);
 
     const driftClouds = !prefersReducedMotion();
+    const sightLine = new THREE.Line3();
+    const nearestOnSight = new THREE.Vector3();
     let lastFrame = performance.now();
+
+    function clearSightLine() {
+        sightLine.set(camera.position, controls.target);
+        for (const cloud of clouds) {
+            sightLine.closestPointToPoint(cloud.position, true, nearestOnSight);
+            cloud.visible = nearestOnSight.distanceTo(cloud.position) > CLOUD_CLEARANCE
+                && cloud.position.distanceTo(camera.position) > CLOUD_CLEARANCE * 2;
+        }
+    }
 
     function frame(now) {
         const dt = Math.min((now - lastFrame) / 1000, 0.1);
@@ -493,6 +509,7 @@ export function createCityScene(container, { onSelect } = {}) {
         easeViewInset(dt);
         processHover();
         controls.update();
+        clearSightLine();
         composer.render();
         labelRenderer.render(scene, camera);
         requestAnimationFrame(frame);

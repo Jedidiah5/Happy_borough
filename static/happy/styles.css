@@ -944,6 +944,16 @@ body.mode-map .hero h1 { text-shadow: 0 2px 0 #fff, 0 0 18px #fff, 0 0 30px #fff
     }
 }
 
+/* Landscape phones: vertical space is what's scarce, so the peek strip is one
+   row (toolbar beside search) and the title makes way for the city. */
+@media (max-height: 560px) {
+    body.is-ready .hero { opacity: 0; }
+    .sheet-hint { display: none; }
+    .center-controls { flex-direction: row; align-items: center; }
+    .toolbar { flex: 1 1 auto; min-width: 0; margin-right: 0; }
+    .search-wrap { flex: 0 0 38%; }
+}
+
 @keyframes sheet-in {
     from { transform: translateY(100%); }
     to { transform: none; }
