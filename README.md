@@ -4,7 +4,7 @@
 
 ![Platform](https://img.shields.io/badge/Platform-Greater%20London-10B981?style=flat-square)
 ![Data Fusion](https://img.shields.io/badge/Open%20Data-ONS%20%2B%20Police%20%2B%20TfL%20%2B%20GLA%20Rents%20%2B%20Planning-38BDF8?style=flat-square)
-![Architecture](https://img.shields.io/badge/Stack-Python%20%2B%20Leaflet%20%2B%20SQLite-0284C7?style=flat-square)
+![Architecture](https://img.shields.io/badge/Stack-Python%20%2B%20Three.js%20%2B%20SQLite-0284C7?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-slate?style=flat-square)
 
 ---
@@ -27,21 +27,24 @@ By combining well-being surveys, crime statistics, public transport accessibilit
   - 😊 **ONS Life Satisfaction** (Personal Well-being Survey, real per-borough data)
   - 🏘️ **Housing & Service Barriers** (English Indices of Deprivation 2025)
   - 💷 **Affordability** (GLA/ONS private rents, cheaper = higher score)
-- **Instant Recalculation**: Live dynamic re-weighting and normalization so sliders always sum to 100%.
+- **Instant Recalculation**: Sliders are normalised to sum to 100%. While you drag, the browser re-scores every borough locally with the same formula as the server. When you let go, the page refetches `/api/rankings` to confirm with live data. The panel shows "✓ Confirmed by server", and the console warns if the two scores ever differ by more than 0.1.
+
+### 🏙️ 3D London City View (Three.js)
+- Every borough is a glowing tower placed by its real latitude/longitude; **tower height = overall score**.
+- Towers rise in a staggered wave on load, and re-grow, re-colour and re-glow live as you move the sliders.
+- The top 3 boroughs glow brighter, and a light beam marks **#1**.
+- Slow auto-orbit with drag, zoom and pan controls, fog, bloom, and floating borough labels.
+- Hover a tower for a tooltip. Click a tower (or a leaderboard row) to fly the camera to it and open the detail card.
+- Respects `prefers-reduced-motion`, caps pixel ratio at 2 for performance, and falls back to a list-only layout if WebGL is unavailable.
 
 ### 🏆 Dynamic Borough Leaderboard
-- Real-time ranked list of top-matched London boroughs based on your current slider weights.
-- Composite **Happiness Score (0–100)** for each borough.
-- Detailed metric breakdowns: safety score, green space index, transport connectivity, and ONS life satisfaction.
-- Integrated council planning approval rates and application volumes queried live from `housing.db`.
+- Real-time ranked list of all 33 boroughs based on your current slider weights, with smooth reordering animations.
+- Composite **Happiness Score (0–100)** for each borough, plus a "Live police" / "Benchmark fallback" tag showing where its safety data came from.
 
-### 🗺️ Interactive Spatial Map
-- Visual map view centered on Greater London.
-- Dynamic color-coded circle markers scaled by borough ranking:
-  - 🟢 **Top Match (#1)**: Vibrant Emerald
-  - 🔵 **Top Tier (#2–#3)**: Cyan Blue
-  - 🟡 **Other Boroughs**: Amber / Slate
-- **Interactive Fly-To**: Clicking any borough in the leaderboard smoothly flies the camera to that borough's coordinates and opens a rich detail popup.
+### 🗂️ Borough Detail Card
+- Six animated bars, one per factor: safety, green space, transport, wellbeing, housing access and affordability.
+- Council planning approval rate and application count from `housing.db` (or "No planning data" when there are none).
+- Typical monthly rent (with 1-bed and 2-bed figures), ONS life satisfaction with its trend, anxiety and "worthwhile" scores, and IMD 2025 deprivation deciles. Values that are estimated are tagged "est.".
 
 ---
 
@@ -68,9 +71,10 @@ $$\text{Score} = (10 \cdot \text{Safety} \cdot w_{\text{safety}}) + (10 \cdot \t
 
 | Component | Technology | Description |
 |---|---|---|
-| **Backend** | Python 3 (`http.server`, `socketserver`) | Lightweight server with zero external framework dependencies |
-| **Frontend** | Vanilla JS & HTML5 | Dark mode glassmorphic UI, responsive two-column grid |
-| **Mapping** | Leaflet 1.9.4 & OpenStreetMap | Lightweight vector circles, popup cards, and animated fly-to |
+| **Backend** | Python 3 (`http.server`, `socketserver`) | Threaded server with zero external framework dependencies; serves the API and the static frontend |
+| **Frontend** | Vanilla JS (ES modules) & HTML5 | Dark glassmorphic UI in `static/happy/`, no build step |
+| **3D Scene** | Three.js r169 (via jsDelivr importmap) | Borough towers, OrbitControls, CSS2D labels, bloom post-processing |
+| **Deployment** | Vercel Python function / Docker | `api/index.py` + `vercel.json`, or the `Dockerfile` |
 | **Typography** | Google Fonts | *Inter* (clean, modern legibility) |
 | **Database** | SQLite 3 (`housing.db`) | Cross-references planning volume and approval rate per borough |
 
@@ -87,7 +91,19 @@ NewSpeak/
 ├── build_deprivation_index.py      # IMD 2025 LSOA -> borough aggregation script
 ├── build_wellbeing_index.py        # ONS well-being time series -> borough aggregation script
 ├── build_rent_index.py             # GLA/ONS borough rents -> affordability score script
-├── housing.db                      # 118MB indexed SQLite database (181,929 applications)
+├── housing.db                      # 118MB indexed SQLite database (181,929 applications, Git LFS)
+├── static/happy/                   # HappyBorough frontend (served at / by happiness_server.py)
+│   ├── index.html                  # Page shell + Three.js importmap
+│   ├── styles.css                  # Glassmorphic UI, detail card, responsive layout
+│   └── js/
+│       ├── main.js                 # App state, API fetch, server cross-check
+│       ├── scoring.js              # FACTORS list + client copy of the scoring formula
+│       ├── scene.js                # Three.js 3D city (towers, beam, camera fly-to)
+│       ├── ui.js                   # Sliders, leaderboard, detail card
+│       └── tween.js                # Tiny animation engine + reduced-motion check
+├── api/index.py                    # Vercel serverless entry point (APP_CHOICE selects the app)
+├── vercel.json                     # Vercel routing + bundles static/ with the function
+├── Dockerfile                      # Container image (APP_FILE selects the app)
 ├── data/
 │   ├── imd2025_london_lsoa.csv             # IMD 2025, filtered to London's ~5,000 LSOAs
 │   ├── deprivation_borough.json            # Aggregated IMD 2025 output, all 33 boroughs
@@ -113,11 +129,25 @@ NewSpeak/
 python3 happiness_server.py
 ```
 
+On Windows (PowerShell):
+
+```powershell
+python happiness_server.py
+```
+
+Set the `PORT` environment variable to use a port other than 8085.
+
 ### 3. Open in Your Browser
 Navigate to:
 👉 **http://localhost:8085**
 
-Adjust the sliders on the left (Safety, Green Space, Transport, Life Satisfaction, Housing & Service Barriers, Affordability) to explore how the rankings and map update dynamically across all 33 London boroughs!
+The first load takes up to a minute while live police data is fetched for all 33 boroughs (then cached for an hour). Adjust the sliders on the left (Safety, Green Space, Transport, Wellbeing, Housing Access, Affordable Rent) to watch the 3D city and leaderboard re-rank instantly, then click any tower or row for the full borough breakdown.
+
+An internet connection is needed for the Three.js and Google Fonts CDNs.
+
+### 4. Deploy (optional)
+- **Vercel**: set the environment variable `APP_CHOICE=happiness`. `vercel.json` routes every request to `api/index.py` and bundles `static/**`.
+- **Docker**: `docker build -t happyborough . && docker run -p 8080:8080 -e APP_FILE=happiness_server.py happyborough`
 
 ---
 
