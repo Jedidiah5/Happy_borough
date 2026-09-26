@@ -19,6 +19,26 @@
 
     <div class="container">
         <div class="sidebar">
+            <div class="card search-card">
+                <div class="search-header">
+                    <span class="search-title">📍 Search Area or Postcode</span>
+                    <span class="search-badge">Live Geocoder</span>
+                </div>
+                <div class="search-box">
+                    <input type="text" id="search-input" placeholder="e.g. Richmond, SW1A 1AA, CR0, Wimbledon..." autocomplete="off">
+                    <button id="search-clear-btn" class="search-icon-btn" title="Clear" style="display: none;">✕</button>
+                    <button id="search-btn" class="search-submit-btn">Search</button>
+                </div>
+                <div class="search-chips">
+                    <span class="chip-label">Try:</span>
+                    <button type="button" class="search-chip" onclick="quickSearch('Richmond')">Richmond</button>
+                    <button type="button" class="search-chip" onclick="quickSearch('SW1A 1AA')">SW1A 1AA</button>
+                    <button type="button" class="search-chip" onclick="quickSearch('CR0')">CR0</button>
+                    <button type="button" class="search-chip" onclick="quickSearch('Camden')">Camden</button>
+                </div>
+                <div id="search-feedback" class="search-feedback" style="display: none;"></div>
+            </div>
+
             <div class="card">
                 <h3 style="font-size: 0.9rem; color: #38BDF8; margin-bottom: 1rem; text-transform: uppercase;">🎛️ Customize Your Happiness Priorities</h3>
                 <div class="slider-group">

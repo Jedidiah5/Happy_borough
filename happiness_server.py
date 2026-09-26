@@ -8,6 +8,7 @@ import os
 import time
 import threading
 import mimetypes
+import math
 
 PORT = int(os.environ.get('PORT', 8085))
 DB_PATH = 'housing.db'
@@ -108,6 +109,194 @@ def get_housing_metrics(borough_name):
         print(f"Housing metrics query note: {e}")
     return {"total_apps": 0, "approval_rate": 75.0}
 
+def calculate_distance_km(lat1, lng1, lat2, lng2):
+    """Haversine distance between two coordinates in kilometers."""
+    R = 6371.0
+    dlat = math.radians(lat2 - lat1)
+    dlng = math.radians(lng2 - lng1)
+    a = math.sin(dlat / 2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlng / 2)**2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return round(R * c, 2)
+
+def find_closest_borough(lat, lng):
+    """Find the closest tracked London borough from given coordinates."""
+    closest = None
+    min_dist = float('inf')
+    for b_name, b_data in BOROUGH_HAPPINESS_DATA.items():
+        dist = calculate_distance_km(lat, lng, b_data['lat'], b_data['lng'])
+        if dist < min_dist:
+            min_dist = dist
+            closest = (b_name, b_data, dist)
+    return closest
+
+def geocode_search(query):
+    """
+    Geocode an area or postcode search query:
+    1. Direct match on tracked London borough names
+    2. UK Postcode or Outcode via api.postcodes.io
+    3. London Wards & Neighborhoods via housing.db applications
+    4. Nominatim OpenStreetMap fallback for landmarks
+    """
+    query = query.strip()
+    if not query:
+        return {"found": False, "message": "Search query is empty."}
+
+    q_lower = query.lower()
+
+    # 1. Direct Borough Name Match
+    for b_name, data in BOROUGH_HAPPINESS_DATA.items():
+        if q_lower == b_name.lower() or (len(q_lower) >= 3 and q_lower in b_name.lower()):
+            return {
+                "found": True,
+                "type": "borough",
+                "query": query,
+                "matched_name": b_name,
+                "borough": b_name,
+                "district": b_name,
+                "lat": data["lat"],
+                "lng": data["lng"],
+                "distance_km": 0.0,
+                "happiness": data["happiness"],
+                "safety": data["safety"],
+                "green_space": data["green_space"],
+                "transport": data["transport"]
+            }
+
+    # 2. UK Postcode or Outcode Lookup via api.postcodes.io
+    clean_pc = urllib.parse.quote(query.replace(" ", "").upper())
+    try:
+        url = f"https://api.postcodes.io/postcodes/{clean_pc}"
+        req = urllib.request.Request(url, headers={'User-Agent': 'HappyBorough-App/1.0'})
+        with urllib.request.urlopen(req, timeout=3.0) as resp:
+            data = json.loads(resp.read().decode('utf-8'))
+            if data.get('status') == 200 and 'result' in data:
+                r = data['result']
+                lat = r.get('latitude')
+                lng = r.get('longitude')
+                distr = r.get('admin_district') or r.get('parish') or 'London'
+                closest = find_closest_borough(lat, lng)
+                return {
+                    "found": True,
+                    "type": "postcode",
+                    "query": query,
+                    "matched_name": f"{query.upper()} ({distr})",
+                    "borough": closest[0] if closest else distr,
+                    "district": distr,
+                    "lat": lat,
+                    "lng": lng,
+                    "distance_km": closest[2] if closest else 0.0,
+                    "happiness": closest[1]['happiness'] if closest else 7.0,
+                    "safety": closest[1]['safety'] if closest else 7.0,
+                    "green_space": closest[1]['green_space'] if closest else 7.0,
+                    "transport": closest[1]['transport'] if closest else 7.0
+                }
+    except Exception:
+        pass
+
+    try:
+        url = f"https://api.postcodes.io/outcodes/{clean_pc}"
+        req = urllib.request.Request(url, headers={'User-Agent': 'HappyBorough-App/1.0'})
+        with urllib.request.urlopen(req, timeout=3.0) as resp:
+            data = json.loads(resp.read().decode('utf-8'))
+            if data.get('status') == 200 and 'result' in data:
+                r = data['result']
+                lat = r.get('latitude')
+                lng = r.get('longitude')
+                districts = r.get('admin_district') or []
+                distr_str = ", ".join(districts) if isinstance(districts, list) else str(districts)
+                closest = find_closest_borough(lat, lng)
+                return {
+                    "found": True,
+                    "type": "postcode_outcode",
+                    "query": query,
+                    "matched_name": f"{query.upper()} ({distr_str})",
+                    "borough": closest[0] if closest else (districts[0] if districts else "London"),
+                    "district": distr_str,
+                    "lat": lat,
+                    "lng": lng,
+                    "distance_km": closest[2] if closest else 0.0,
+                    "happiness": closest[1]['happiness'] if closest else 7.0,
+                    "safety": closest[1]['safety'] if closest else 7.0,
+                    "green_space": closest[1]['green_space'] if closest else 7.0,
+                    "transport": closest[1]['transport'] if closest else 7.0
+                }
+    except Exception:
+        pass
+
+    # 3. Database Search in housing.db (London Wards and Area names)
+    if os.path.exists(DB_PATH):
+        try:
+            conn = sqlite3.connect(DB_PATH)
+            c = conn.cursor()
+            c.execute('''
+                SELECT ward_name, area_name, AVG(lat), AVG(lng), COUNT(*) as cnt
+                FROM applications
+                WHERE lat IS NOT NULL AND lng IS NOT NULL
+                  AND (LOWER(ward_name) LIKE ? OR LOWER(area_name) LIKE ?)
+                GROUP BY ward_name, area_name
+                ORDER BY cnt DESC
+                LIMIT 1
+            ''', (f"%{q_lower}%", f"%{q_lower}%"))
+            row = c.fetchone()
+            conn.close()
+            if row and row[2] and row[3]:
+                ward_name, area_name, lat, lng, cnt = row
+                closest = find_closest_borough(lat, lng)
+                display = f"{ward_name}, {area_name}" if ward_name and ward_name != area_name else area_name
+                return {
+                    "found": True,
+                    "type": "area",
+                    "query": query,
+                    "matched_name": display,
+                    "borough": closest[0] if closest else area_name,
+                    "district": area_name,
+                    "lat": round(lat, 5),
+                    "lng": round(lng, 5),
+                    "distance_km": closest[2] if closest else 0.0,
+                    "happiness": closest[1]['happiness'] if closest else 7.0,
+                    "safety": closest[1]['safety'] if closest else 7.0,
+                    "green_space": closest[1]['green_space'] if closest else 7.0,
+                    "transport": closest[1]['transport'] if closest else 7.0
+                }
+        except Exception as e:
+            print(f"DB geocode lookup note: {e}")
+
+    # 4. Fallback: OpenStreetMap Nominatim for London landmarks
+    try:
+        url = f"https://nominatim.openstreetmap.org/search?q={urllib.parse.quote(query + ', London, UK')}&format=json&limit=1"
+        req = urllib.request.Request(url, headers={'User-Agent': 'HappyBorough-App/1.0'})
+        with urllib.request.urlopen(req, timeout=3.0) as resp:
+            data = json.loads(resp.read().decode('utf-8'))
+            if data and len(data) > 0:
+                first = data[0]
+                lat = float(first['lat'])
+                lng = float(first['lon'])
+                display_name = first.get('display_name', query).split(',')[0]
+                closest = find_closest_borough(lat, lng)
+                return {
+                    "found": True,
+                    "type": "location",
+                    "query": query,
+                    "matched_name": f"{display_name} (London)",
+                    "borough": closest[0] if closest else "London",
+                    "district": "London",
+                    "lat": round(lat, 5),
+                    "lng": round(lng, 5),
+                    "distance_km": closest[2] if closest else 0.0,
+                    "happiness": closest[1]['happiness'] if closest else 7.0,
+                    "safety": closest[1]['safety'] if closest else 7.0,
+                    "green_space": closest[1]['green_space'] if closest else 7.0,
+                    "transport": closest[1]['transport'] if closest else 7.0
+                }
+    except Exception:
+        pass
+
+    return {
+        "found": False,
+        "query": query,
+        "message": f"Could not find coordinates for '{query}'. Try a London borough (e.g. Richmond), ward (e.g. Mayesbrook), or UK postcode (e.g. SW1A 1AA, CR0)."
+    }
+
 class HappinessHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         parsed = urllib.parse.urlparse(self.path)
@@ -152,6 +341,11 @@ class HappinessHandler(http.server.SimpleHTTPRequestHandler):
 
             rankings.sort(key=lambda x: x['overall_score'], reverse=True)
             self.send_json(rankings)
+        elif parsed.path == '/api/geocode':
+            params = urllib.parse.parse_qs(parsed.query)
+            q = params.get('q', [''])[0]
+            result = geocode_search(q)
+            self.send_json(result)
         elif parsed.path == '/' or parsed.path == '/index.html':
             self.send_static_file(os.path.join(STATIC_DIR, 'happy', 'index.html'))
         elif parsed.path.startswith('/static/'):
