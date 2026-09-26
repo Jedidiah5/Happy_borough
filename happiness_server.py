@@ -8,6 +8,7 @@ import os
 import sys
 import time
 import threading
+import concurrent.futures
 
 # Some Windows terminals default stdout to a legacy codepage (cp1252) that
 # can't encode the emoji in this file's log messages; force UTF-8 so the
@@ -20,6 +21,7 @@ DB_PATH = 'housing.db'
 DEPRIVATION_JSON_PATH = os.path.join(os.path.dirname(__file__), 'data', 'deprivation_borough.json')
 WELLBEING_JSON_PATH = os.path.join(os.path.dirname(__file__), 'data', 'wellbeing_borough.json')
 RENT_JSON_PATH = os.path.join(os.path.dirname(__file__), 'data', 'rent_borough.json')
+LSOA_GEOJSON_PATH = os.path.join(os.path.dirname(__file__), 'data', 'lsoa_choropleth.json')
 
 # Baseline Police Stats + TfL PTAL benchmarks. Only available for a subset of
 # boroughs (the ones with a hand-curated published figure) -- every other
@@ -94,6 +96,18 @@ WELLBEING_DATA = load_json_data(WELLBEING_JSON_PATH, "ONS well-being data")
 # average instead), built by build_rent_index.py from
 # data/london_borough_rents_2025.csv.
 RENT_DATA = load_json_data(RENT_JSON_PATH, "borough rent data")
+
+# LSOA-level (neighborhood, ~1,500 people) IMD 2025 choropleth geometry for
+# all 4,994 London small areas, built by build_lsoa_choropleth.py. Read once
+# as raw bytes at startup and served as-is by /api/lsoa-geo -- it's just a
+# static GeoJSON payload for Leaflet, so there's no need to re-parse/dump it
+# on every request.
+try:
+    with open(LSOA_GEOJSON_PATH, 'rb') as f:
+        LSOA_GEOJSON_BYTES = f.read()
+except Exception as e:
+    print(f"⚠️ Could not load LSOA choropleth geometry ({LSOA_GEOJSON_PATH}): {e}")
+    LSOA_GEOJSON_BYTES = b'{"type":"FeatureCollection","features":[]}'
 
 # London-wide average of the TfL/green-space benchmarks and of the ONS
 # well-being measures, used as a neutral stand-in for boroughs that don't
@@ -250,17 +264,23 @@ class HappinessHandler(http.server.SimpleHTTPRequestHandler):
             w_barriers = float(params.get('w_barriers', [0.15])[0])
             w_affordability = float(params.get('w_affordability', [0.15])[0])
 
+            # Fetch safety for all boroughs concurrently -- doing this one
+            # borough at a time (up to a 3.5s timeout each) made a cold-cache
+            # request take 30+ seconds, long enough that the browser gave up
+            # and aborted the connection before the response was ready.
+            with concurrent.futures.ThreadPoolExecutor(max_workers=12) as pool:
+                safety_results = dict(pool.map(
+                    lambda item: (item[0], fetch_police_safety(item[0], item[1]['lat'], item[1]['lng'], item[1]['safety'])),
+                    BOROUGH_REGISTRY.items(),
+                ))
+
             rankings = []
             for b_name, data in BOROUGH_REGISTRY.items():
                 housing = get_housing_metrics(b_name)
                 dep = data['deprivation']['domains']
                 wellbeing = data['wellbeing']
                 rent = data['rent']
-
-                # Fetch safety from live UK Police API, or revert to previous benchmark version if it errors
-                safety_score, crime_count, is_live = fetch_police_safety(
-                    b_name, data['lat'], data['lng'], data['safety']
-                )
+                safety_score, crime_count, is_live = safety_results[b_name]
 
                 # IMD 2025 "Barriers to Housing and Services" decile: higher =
                 # fewer barriers (better affordability/access), same
@@ -334,6 +354,16 @@ class HappinessHandler(http.server.SimpleHTTPRequestHandler):
 
             rankings.sort(key=lambda x: x['overall_score'], reverse=True)
             self.send_json(rankings)
+        elif parsed.path == '/api/lsoa-geo':
+            # Static GeoJSON payload (4,994 London LSOA polygons + IMD 2025
+            # domain deciles), served as-is and fetched lazily by the
+            # frontend only when neighborhood view is switched on.
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Cache-Control', 'public, max-age=3600')
+            self.end_headers()
+            self.wfile.write(LSOA_GEOJSON_BYTES)
         elif parsed.path == '/' or parsed.path == '/index.html':
             self.send_response(200)
             self.send_header('Content-type', 'text/html; charset=utf-8')
@@ -376,6 +406,8 @@ HTML_UI = """<!DOCTYPE html>
         .source-tag { font-size: 0.68rem; padding: 1px 5px; border-radius: 4px; display: inline-block; margin-top: 3px; }
         .source-live { background: rgba(16, 185, 129, 0.2); color: #34D399; }
         .source-fallback { background: rgba(245, 158, 11, 0.2); color: #FBBF24; }
+        .mode-btn { flex: 1; padding: 8px; background: #0F172A; color: #94A3B8; border: 1px solid #334155; border-radius: 6px; cursor: pointer; font-size: 0.78rem; font-weight: 600; }
+        .mode-btn-active { background: #7C3AED; color: #FFFFFF; border-color: #7C3AED; }
     </style>
 </head>
 <body>
@@ -384,7 +416,7 @@ HTML_UI = """<!DOCTYPE html>
             😊 HappyBorough London
             <span class="badge">🛡️ Live UK Police API + ONS Data Fusion</span>
         </div>
-        <div style="font-size: 0.85rem; color: #94A3B8;">ONS Well-being + UK Police Open Data + TfL PTAL + IMD 2025 Deprivation + GLA Private Rents + 181k Council Applications</div>
+        <div style="font-size: 0.85rem; color: #94A3B8;">ONS Well-being + UK Police Open Data + TfL PTAL + IMD 2025 Deprivation (borough &amp; 4,994-LSOA) + GLA Private Rents + 181k Council Applications</div>
     </header>
 
     <div class="container">
@@ -418,6 +450,27 @@ HTML_UI = """<!DOCTYPE html>
             </div>
 
             <div class="card">
+                <h3 style="font-size: 0.9rem; color: #A78BFA; margin-bottom: 0.8rem; text-transform: uppercase;">🗺️ Map View</h3>
+                <div style="display: flex; gap: 6px; margin-bottom: 0.6rem;">
+                    <button id="mode-borough" class="mode-btn mode-btn-active" onclick="setMapMode('borough')">🏙️ Boroughs</button>
+                    <button id="mode-lsoa" class="mode-btn" onclick="setMapMode('lsoa')">🔬 Neighborhoods</button>
+                </div>
+                <div id="lsoa-controls" style="display: none;">
+                    <select id="lsoa-domain" onchange="renderLsoaLayer()" style="width: 100%; padding: 6px; background: #0F172A; color: #F8FAFC; border: 1px solid #334155; border-radius: 6px; margin-bottom: 6px;">
+                        <option value="imd">Overall Deprivation (IMD)</option>
+                        <option value="income">Income</option>
+                        <option value="employment">Employment</option>
+                        <option value="education">Education, Skills & Training</option>
+                        <option value="health">Health & Disability</option>
+                        <option value="crime">Crime</option>
+                        <option value="housing_barriers">Housing & Service Barriers</option>
+                        <option value="living_environment">Living Environment</option>
+                    </select>
+                    <div style="font-size: 0.68rem; color: #94A3B8;">4,994 London LSOAs (IMD 2025) · decile 1 = most deprived, 10 = least deprived</div>
+                </div>
+            </div>
+
+            <div class="card">
                 <h3 style="font-size: 0.9rem; color: #10B981; margin-bottom: 0.8rem; text-transform: uppercase;">🏆 Top Matched Boroughs</h3>
                 <div id="rankings-list">Loading legal open data rankings...</div>
             </div>
@@ -430,6 +483,62 @@ HTML_UI = """<!DOCTYPE html>
         let map = L.map('map').setView([51.5074, -0.1278], 11);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
         let markersGroup = L.layerGroup().addTo(map);
+
+        // --- LSOA neighborhood choropleth (lazy-loaded, IMD 2025) ---
+        let mapMode = 'borough';
+        let lsoaData = null;
+        let lsoaLayer = null;
+
+        // Decile 1 (most deprived) -> 10 (least deprived), red to green.
+        const DECILE_COLORS = ['#7F1D1D', '#B91C1C', '#DC2626', '#EA580C', '#F59E0B', '#EAB308', '#84CC16', '#22C55E', '#16A34A', '#15803D'];
+        function colorForDecile(decile) {
+            if (decile === null || decile === undefined) return '#475569';
+            const idx = Math.min(9, Math.max(0, Math.round(decile) - 1));
+            return DECILE_COLORS[idx];
+        }
+
+        async function setMapMode(mode) {
+            mapMode = mode;
+            document.getElementById('mode-borough').classList.toggle('mode-btn-active', mode === 'borough');
+            document.getElementById('mode-lsoa').classList.toggle('mode-btn-active', mode === 'lsoa');
+            document.getElementById('lsoa-controls').style.display = mode === 'lsoa' ? 'block' : 'none';
+
+            if (mode === 'borough') {
+                if (lsoaLayer) map.removeLayer(lsoaLayer);
+                if (!map.hasLayer(markersGroup)) map.addLayer(markersGroup);
+            } else {
+                if (map.hasLayer(markersGroup)) map.removeLayer(markersGroup);
+                await renderLsoaLayer();
+            }
+        }
+
+        async function renderLsoaLayer() {
+            if (!lsoaData) {
+                const res = await fetch('/api/lsoa-geo');
+                lsoaData = await res.json();
+            }
+            if (lsoaLayer) map.removeLayer(lsoaLayer);
+
+            const domain = document.getElementById('lsoa-domain').value;
+            lsoaLayer = L.geoJSON(lsoaData, {
+                style: (feature) => ({
+                    fillColor: colorForDecile(feature.properties.domains[domain]?.decile),
+                    fillOpacity: 0.65,
+                    color: '#0F172A',
+                    weight: 0.5,
+                }),
+                onEachFeature: (feature, layer) => {
+                    const p = feature.properties;
+                    const d = p.domains[domain];
+                    layer.bindPopup(`
+                        <strong>${p.lsoa_name}</strong><br/>
+                        <small>${p.borough}</small><br/>
+                        Decile: <b>${d ? d.decile : 'n/a'}/10</b> (1 = most deprived, 10 = least)<br/>
+                        <small>LSOA code: ${p.lsoa_code}</small>
+                    `);
+                },
+            }).addTo(map);
+        }
 
         async function updateRankings() {
             const s = parseInt(document.getElementById('w-safety').value);

@@ -36,11 +36,9 @@ By combining well-being surveys, crime statistics, public transport accessibilit
 - Integrated council planning approval rates and application volumes queried live from `housing.db`.
 
 ### 🗺️ Interactive Spatial Map
-- Visual map view centered on Greater London.
-- Dynamic color-coded circle markers scaled by borough ranking:
-  - 🟢 **Top Match (#1)**: Vibrant Emerald
-  - 🔵 **Top Tier (#2–#3)**: Cyan Blue
-  - 🟡 **Other Boroughs**: Amber / Slate
+- Visual map view centered on Greater London, with two switchable modes:
+  - **🏙️ Boroughs**: dynamic color-coded circle markers scaled by borough ranking (🟢 Top Match #1, 🔵 Top Tier #2–#3, 🟡 everyone else).
+  - **🔬 Neighborhoods**: a true small-area choropleth of all 4,994 London LSOAs (~1,500 people each), shaded by any of 8 IMD 2025 domains via a picker (Overall, Income, Employment, Education, Health, Crime, Housing & Service Barriers, Living Environment) — click any polygon for its exact decile.
 - **Interactive Fly-To**: Clicking any borough in the leaderboard smoothly flies the camera to that borough's coordinates and opens a rich detail popup.
 
 ---
@@ -56,6 +54,7 @@ HappyBorough combines multiple official UK public sector datasets:
 5. **Council Planning Portal Dataset (`housing.db`)**: 181,929 historical planning applications (2022–2025) reflecting council development velocity and approval flexibility, for all 33 boroughs.
 6. **English Indices of Deprivation 2025 (MHCLG)**: Official small-area (LSOA) deprivation scores across 7 domains — Income, Employment, Education, Health, Crime, **Barriers to Housing and Services**, and Living Environment — aggregated up to all 33 London boroughs by [`build_deprivation_index.py`](build_deprivation_index.py) (population-weighted mean, source rows in [`data/imd2025_london_lsoa.csv`](data/imd2025_london_lsoa.csv), output in [`data/deprivation_borough.json`](data/deprivation_borough.json)). Deciles run 1 (most deprived 10% in England) to 10 (least deprived), matching the app's existing 0–10 scale.
 7. **GLA "Housing in London 2025" / ONS Price Index of Private Rents**: Average monthly private rent by bedroom count (Sept 2024–Aug 2025) for 32 of 33 boroughs, aggregated by [`build_rent_index.py`](build_rent_index.py) from [`data/london_borough_rents_2025.csv`](data/london_borough_rents_2025.csv) into [`data/rent_borough.json`](data/rent_borough.json). Converted into a 0–10 **Affordability score** (cheapest borough = 10, priciest = 0). ONS doesn't publish a City of London figure either, so it uses the same flagged London-wide average fallback.
+8. **ONS Open Geography Portal — LSOA boundaries & population-weighted centroids**: The same IMD 2025 data above, but rendered at its native small-area resolution instead of aggregated to borough level. [`build_lsoa_choropleth.py`](build_lsoa_choropleth.py) joins [`data/lsoa_boundaries_london.geojson`](data/lsoa_boundaries_london.geojson) (generalised polygon boundaries) and [`data/lsoa_pop_centroids_london.geojson`](data/lsoa_pop_centroids_london.geojson) with the LSOA-level IMD rows into [`data/lsoa_choropleth.json`](data/lsoa_choropleth.json) — all 4,994 London LSOAs, served lazily to the map's **Neighborhoods** view via `/api/lsoa-geo`.
 
 ### Composite Score Formula
 For any set of user weights $(w_{\text{safety}}, w_{\text{green}}, w_{\text{transport}}, w_{\text{happiness}}, w_{\text{barriers}}, w_{\text{afford}})$ where $\sum w = 1.0$:
@@ -70,7 +69,7 @@ $$\text{Score} = (10 \cdot \text{Safety} \cdot w_{\text{safety}}) + (10 \cdot \t
 |---|---|---|
 | **Backend** | Python 3 (`http.server`, `socketserver`) | Lightweight server with zero external framework dependencies |
 | **Frontend** | Vanilla JS & HTML5 | Dark mode glassmorphic UI, responsive two-column grid |
-| **Mapping** | Leaflet 1.9.4 & OpenStreetMap | Lightweight vector circles, popup cards, and animated fly-to |
+| **Mapping** | Leaflet 1.9.4 & OpenStreetMap | Vector circles, a 4,994-polygon GeoJSON choropleth, popup cards, and animated fly-to |
 | **Typography** | Google Fonts | *Inter* (clean, modern legibility) |
 | **Database** | SQLite 3 (`housing.db`) | Cross-references planning volume and approval rate per borough |
 
@@ -87,6 +86,7 @@ NewSpeak/
 ├── build_deprivation_index.py      # IMD 2025 LSOA -> borough aggregation script
 ├── build_wellbeing_index.py        # ONS well-being time series -> borough aggregation script
 ├── build_rent_index.py             # GLA/ONS borough rents -> affordability score script
+├── build_lsoa_choropleth.py        # LSOA boundaries + centroids + IMD -> neighborhood choropleth script
 ├── housing.db                      # 118MB indexed SQLite database (181,929 applications)
 ├── data/
 │   ├── imd2025_london_lsoa.csv             # IMD 2025, filtered to London's ~5,000 LSOAs
@@ -94,7 +94,10 @@ NewSpeak/
 │   ├── ons_wellbeing_london_boroughs.csv   # ONS well-being survey, filtered to London boroughs
 │   ├── wellbeing_borough.json              # Aggregated ONS well-being output, 32 of 33 boroughs
 │   ├── london_borough_rents_2025.csv       # GLA "Housing in London 2025" borough rent table
-│   └── rent_borough.json                   # Aggregated rent/affordability output, all 33 boroughs
+│   ├── rent_borough.json                   # Aggregated rent/affordability output, all 33 boroughs
+│   ├── lsoa_boundaries_london.geojson      # LSOA polygon boundaries, filtered to London's 4,994 LSOAs
+│   ├── lsoa_pop_centroids_london.geojson   # LSOA population-weighted centroids, same 4,994 LSOAs
+│   └── lsoa_choropleth.json                # Boundaries + centroids + IMD joined, served by /api/lsoa-geo
 ├── .env.example                    # Environment configuration template
 ├── .gitignore                      # Git ignore rules for bytecode & secrets
 └── README.md                       # Project documentation
@@ -229,6 +232,14 @@ GET /api/rankings?w_safety=0.20&w_green=0.20&w_transport=0.15&w_happiness=0.15&w
 ```
 
 `wellbeing.estimated` and `rent.estimated` are only ever `true` for the City of London: its resident population (~8,000) is too small for ONS to publish either a well-being or a private-rent estimate, so both fall back to a flagged London-wide average.
+
+### Get Neighborhood (LSOA) Choropleth Geometry
+
+```http
+GET /api/lsoa-geo
+```
+
+Returns a static GeoJSON `FeatureCollection` of all 4,994 London LSOAs (population ~1,500 each), fetched lazily by the map's **🔬 Neighborhoods** view. Each feature's `properties` carries `lsoa_code`, `lsoa_name`, `borough`, a population-weighted `centroid` (`[lng, lat]`), and a `domains` object with `{score, decile}` for `imd`, `income`, `employment`, `education`, `health`, `crime`, `housing_barriers`, and `living_environment` — the same domains as the borough-level `imd` object above, just at native small-area resolution instead of population-weighted up to borough.
 
 ---
 
