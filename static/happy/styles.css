@@ -252,6 +252,90 @@ input[type=range]:focus-visible { box-shadow: 0 0 0 2px var(--mint); }
 .source-live { background: rgba(16, 185, 129, 0.16); color: #6ee7b7; }
 .source-fallback { background: rgba(245, 158, 11, 0.16); color: var(--amber); }
 
+.detail-card {
+    left: 50%;
+    bottom: 24px;
+    width: 290px;
+    padding: 16px 18px 16px;
+    transform: translateX(-50%);
+    animation: card-in 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.detail-card[hidden] { display: none; }
+
+@keyframes card-in {
+    from { opacity: 0; transform: translate(-50%, 14px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.detail-back {
+    margin-bottom: 10px;
+    padding: 4px 10px;
+    border: 1px solid var(--glass-border);
+    border-radius: 999px;
+    background: rgba(148, 163, 184, 0.08);
+    color: var(--text-dim);
+    font: inherit;
+    font-size: 0.72rem;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+}
+
+.detail-back:hover,
+.detail-back:focus-visible { color: var(--text); border-color: var(--mint); outline: none; }
+
+.detail-rank {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--mint);
+}
+
+.detail-name { margin: 2px 0 2px; font-size: 1.15rem; font-weight: 800; letter-spacing: -0.02em; }
+
+.bars { margin: 12px 0 10px; display: grid; gap: 8px; }
+
+.bar {
+    display: grid;
+    grid-template-columns: 96px 1fr 38px;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.76rem;
+    color: #cbd5e1;
+}
+
+.bar strong { text-align: right; font-variant-numeric: tabular-nums; font-size: 0.74rem; }
+
+.bar-track {
+    height: 6px;
+    border-radius: 999px;
+    background: rgba(148, 163, 184, 0.15);
+    overflow: hidden;
+}
+
+.bar-fill {
+    width: 0;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--indigo), var(--mint));
+    box-shadow: 0 0 10px rgba(52, 245, 197, 0.5);
+    transition: width 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.bar:nth-child(2) .bar-fill { transition-delay: 0.06s; }
+.bar:nth-child(3) .bar-fill { transition-delay: 0.12s; }
+.bar:nth-child(4) .bar-fill { transition-delay: 0.18s; }
+
+.detail-housing {
+    padding-top: 10px;
+    border-top: 1px solid var(--glass-border);
+    font-size: 0.78rem;
+    color: var(--text-dim);
+}
+
+.detail-housing strong { color: var(--text); }
+
 .hero {
     position: fixed;
     top: 50%;

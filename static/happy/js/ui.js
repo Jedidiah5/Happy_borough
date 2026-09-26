@@ -96,6 +96,44 @@ export function initSliders({ onInput, onCommit }) {
     return readWeights();
 }
 
+export function markSelectedRow(name) {
+    for (const [rowName, row] of leaderboardRows) row.classList.toggle('is-selected', rowName === name);
+}
+
+export function initDetailCard({ onClose }) {
+    document.getElementById('detail-back').addEventListener('click', onClose);
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !document.getElementById('detail').hidden) onClose();
+    });
+}
+
+// opening=true replays the bar fill from zero; otherwise bars ease to new values.
+export function showDetail(b, rank, { opening = false } = {}) {
+    const card = document.getElementById('detail');
+    document.getElementById('detail-rank').textContent = `#${rank + 1} · score ${b.overall_score.toFixed(1)} / 100`;
+    document.getElementById('detail-name').textContent = b.borough;
+    document.getElementById('detail-source').innerHTML = sourceTagHtml(b);
+    document.getElementById('detail-housing').innerHTML = b.housing_apps > 0
+        ? `🏗️ <strong>${b.housing_approval_rate}%</strong> planning approval · ${b.housing_apps.toLocaleString()} applications`
+        : '🏗️ No planning data';
+
+    const bars = [...card.querySelectorAll('.bar')];
+    for (const bar of bars) {
+        const value = b[bar.dataset.key];
+        bar.querySelector('strong').textContent = `${value}/10`;
+        if (opening) bar.querySelector('.bar-fill').style.width = '0%';
+    }
+    card.hidden = false;
+    if (opening) card.getBoundingClientRect();
+    requestAnimationFrame(() => {
+        for (const bar of bars) bar.querySelector('.bar-fill').style.width = `${b[bar.dataset.key] * 10}%`;
+    });
+}
+
+export function hideDetail() {
+    document.getElementById('detail').hidden = true;
+}
+
 export function setSyncStatus(state, text) {
     const el = document.getElementById('sync-status');
     el.dataset.state = state;

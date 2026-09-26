@@ -58,6 +58,20 @@
         <ol class="leaderboard" id="leaderboard"></ol>
     </aside>
 
+    <section class="panel detail-card" id="detail" hidden aria-live="polite">
+        <button class="detail-back" id="detail-back" type="button">← Back to overview</button>
+        <div class="detail-rank" id="detail-rank"></div>
+        <h3 class="detail-name" id="detail-name"></h3>
+        <div id="detail-source"></div>
+        <div class="bars">
+            <div class="bar" data-key="safety_score"><span>🛡️ Safety</span><div class="bar-track"><div class="bar-fill"></div></div><strong></strong></div>
+            <div class="bar" data-key="green_space"><span>🌳 Green space</span><div class="bar-track"><div class="bar-fill"></div></div><strong></strong></div>
+            <div class="bar" data-key="transport_score"><span>🚆 Transport</span><div class="bar-track"><div class="bar-fill"></div></div><strong></strong></div>
+            <div class="bar" data-key="ons_happiness"><span>😊 Happiness</span><div class="bar-track"><div class="bar-fill"></div></div><strong></strong></div>
+        </div>
+        <div class="detail-housing" id="detail-housing"></div>
+    </section>
+
     <div id="loading" class="loading">
         <div class="spinner"></div>
         <div>Fetching live police &amp; planning data…</div>

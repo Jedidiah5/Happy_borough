@@ -5,7 +5,7 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { animate, tickTweens, easeOutCubic, prefersReducedMotion } from './tween.js';
+import { animate, tickTweens, easeOutCubic, easeInOutCubic, prefersReducedMotion } from './tween.js';
 
 const WORLD_SPAN = 46;
 const HEIGHT_PER_POINT = 0.14;
@@ -26,7 +26,7 @@ function makeProjector(boroughs) {
     return (b) => ({ x: (b.lng - lng0) * lngScale * scale, z: -(b.lat - lat0) * scale });
 }
 
-export function createCityScene(container) {
+export function createCityScene(container, { onSelect } = {}) {
     const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(container.clientWidth, container.clientHeight);
@@ -282,6 +282,83 @@ export function createCityScene(container) {
         if (ranked.length) moveBeamTo(ranked[0].borough, delay);
     }
 
+    const raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2();
+    let pointerDown = null;
+
+    function pickTower(event) {
+        const rect = renderer.domElement.getBoundingClientRect();
+        pointer.set(
+            ((event.clientX - rect.left) / rect.width) * 2 - 1,
+            -((event.clientY - rect.top) / rect.height) * 2 + 1
+        );
+        raycaster.setFromCamera(pointer, camera);
+        const hit = raycaster.intersectObjects([...towers.values()].map((t) => t.mesh))[0];
+        return hit ? hit.object.userData.borough : null;
+    }
+
+    renderer.domElement.addEventListener('pointerdown', (e) => {
+        pointerDown = { x: e.clientX, y: e.clientY };
+    });
+    renderer.domElement.addEventListener('pointerup', (e) => {
+        if (!pointerDown) return;
+        const moved = Math.hypot(e.clientX - pointerDown.x, e.clientY - pointerDown.y);
+        pointerDown = null;
+        if (moved > 5) return;
+        const name = pickTower(e);
+        if (name && onSelect) onSelect(name);
+    });
+
+    const HOME_POSITION = camera.position.clone();
+    const HOME_TARGET = controls.target.clone();
+    let cancelCameraTween = null;
+    let selected = null;
+
+    function flyCamera(toPosition, toTarget, duration = 1100) {
+        if (cancelCameraTween) cancelCameraTween();
+        controls.autoRotate = false;
+        clearTimeout(resumeTimer);
+        const fromPosition = camera.position.clone();
+        const fromTarget = controls.target.clone();
+        cancelCameraTween = animate({
+            duration,
+            ease: easeInOutCubic,
+            onUpdate: (t) => {
+                camera.position.lerpVectors(fromPosition, toPosition, t);
+                controls.target.lerpVectors(fromTarget, toTarget, t);
+            },
+            onComplete: () => {
+                cancelCameraTween = null;
+            },
+        });
+    }
+
+    function setSelected(name) {
+        if (selected && towers.has(selected)) towers.get(selected).ring.scale.setScalar(1);
+        selected = name;
+        if (name && towers.has(name)) towers.get(name).ring.scale.setScalar(1.6);
+    }
+
+    function focusOn(name) {
+        const tower = towers.get(name);
+        if (!tower) return;
+        setSelected(name);
+        const target = tower.group.position.clone();
+        target.y = tower.height * 0.5;
+        const direction = camera.position.clone().sub(controls.target).setY(0).normalize();
+        const position = target.clone().addScaledVector(direction, 22);
+        position.y = target.y + 14;
+        flyCamera(position, target);
+    }
+
+    function resetView() {
+        setSelected(null);
+        flyCamera(HOME_POSITION.clone(), HOME_TARGET.clone());
+        resumeTimer = setTimeout(() => {
+            controls.autoRotate = !prefersReducedMotion();
+        }, 1200);
+    }
+
     function resize() {
         const w = container.clientWidth;
         const h = container.clientHeight;
@@ -303,5 +380,5 @@ export function createCityScene(container) {
     }
     requestAnimationFrame(frame);
 
-    return { update };
+    return { update, focusOn, resetView };
 }

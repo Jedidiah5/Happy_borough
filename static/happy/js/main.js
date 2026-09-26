@@ -1,6 +1,14 @@
 import { createCityScene } from './scene.js';
 import { computeScore, rankBoroughs } from './scoring.js';
-import { initSliders, renderLeaderboard, setSyncStatus } from './ui.js';
+import {
+    hideDetail,
+    initDetailCard,
+    initSliders,
+    markSelectedRow,
+    renderLeaderboard,
+    setSyncStatus,
+    showDetail,
+} from './ui.js';
 
 const SCORE_TOLERANCE = 0.1;
 
@@ -8,6 +16,7 @@ const state = {
     boroughs: [],
     weights: null,
     ranked: [],
+    selected: null,
     requestId: 0,
 };
 
@@ -29,10 +38,27 @@ function render(options) {
     state.ranked = rankBoroughs(state.boroughs, state.weights);
     city.update(state.ranked, options);
     renderLeaderboard(state.ranked, { onSelect: selectBorough });
+    markSelectedRow(state.selected);
+    if (state.selected) {
+        const rank = state.ranked.findIndex((b) => b.borough === state.selected);
+        if (rank >= 0) showDetail(state.ranked[rank], rank);
+    }
 }
 
 function selectBorough(name) {
-    console.info('[HappyBorough] selected', name);
+    const rank = state.ranked.findIndex((b) => b.borough === name);
+    if (rank < 0) return;
+    state.selected = name;
+    city.focusOn(name);
+    markSelectedRow(name);
+    showDetail(state.ranked[rank], rank, { opening: true });
+}
+
+function clearSelection() {
+    state.selected = null;
+    markSelectedRow(null);
+    hideDetail();
+    city.resetView();
 }
 
 function checkAgainstServer(serverRanked, weights) {
@@ -67,7 +93,8 @@ async function refreshFromServer(weights) {
 }
 
 async function boot() {
-    city = createCityScene(document.getElementById('scene'));
+    city = createCityScene(document.getElementById('scene'), { onSelect: selectBorough });
+    initDetailCard({ onClose: clearSelection });
     state.weights = initSliders({
         onInput: (weights) => {
             state.weights = weights;
