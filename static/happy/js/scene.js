@@ -39,6 +39,13 @@ const AUTO_ROTATE_RESUME_MS = 6000;
 // only the top few (plus the selected tower) keep theirs.
 const COMPACT_LABELS_BELOW_PX = 700;
 const COMPACT_LABEL_COUNT = 5;
+// Camera minus target at the default (landscape) home view.
+const HOME_OFFSET = new THREE.Vector3(0, 36, 64);
+// Portrait screens: back off until this many world units fit across (the map
+// is WORLD_SPAN wide, so its outer edges crop a little), and look down more
+// steeply so the map fills the tall screen instead of a thin strip.
+const PORTRAIT_FIT_WIDTH = 38;
+const PORTRAIT_ELEVATION_DEG = 44;
 
 function makeProjector(boroughs) {
     const lat0 = boroughs.reduce((s, b) => s + b.lat, 0) / boroughs.length;
@@ -363,9 +370,48 @@ export function createCityScene(container, { onSelect } = {}) {
         setHovered(pointerDown ? null : pickTower(event), event);
     }
 
-    const HOME_POSITION = camera.position.clone();
     const HOME_TARGET = controls.target.clone();
     let cancelCameraTween = null;
+
+    // Camera offset from its target for the current aspect ratio; also used to
+    // scale the fly-to distance so a focused tower isn't cropped on portrait.
+    function homeOffset() {
+        const aspect = camera.aspect;
+        if (aspect >= 1) return HOME_OFFSET.clone();
+        const portrait = THREE.MathUtils.clamp((1 - aspect) / 0.5, 0, 1);
+        const halfFovX = Math.atan(Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * aspect);
+        const fitDistance = PORTRAIT_FIT_WIDTH / 2 / Math.tan(halfFovX);
+        const distance = THREE.MathUtils.clamp(fitDistance, HOME_OFFSET.length(), controls.maxDistance);
+        const baseElevation = Math.atan2(HOME_OFFSET.y, HOME_OFFSET.z);
+        const elevation = THREE.MathUtils.lerp(baseElevation, THREE.MathUtils.degToRad(PORTRAIT_ELEVATION_DEG), portrait);
+        return new THREE.Vector3(0, Math.sin(elevation) * distance, Math.cos(elevation) * distance);
+    }
+
+    camera.position.copy(HOME_TARGET).add(homeOffset());
+
+    // Pixels of the canvas's bottom edge hidden behind UI (the phone bottom
+    // sheets). The projection centre shifts up by half of it so whatever the
+    // camera looks at sits in the middle of the part that's still visible.
+    let viewInset = 0;
+    let viewInsetTarget = 0;
+
+    function applyViewInset() {
+        const w = container.clientWidth;
+        const h = container.clientHeight;
+        if (viewInset < 0.5) camera.clearViewOffset();
+        else camera.setViewOffset(w, h, 0, viewInset / 2, w, h);
+    }
+
+    function setViewInset(px) {
+        viewInsetTarget = Math.max(0, px || 0);
+    }
+
+    function easeViewInset(dt) {
+        if (viewInset === viewInsetTarget) return;
+        const remaining = viewInsetTarget - viewInset;
+        viewInset = Math.abs(remaining) < 0.5 ? viewInsetTarget : viewInset + remaining * Math.min(1, dt * 8);
+        applyViewInset();
+    }
 
     function flyCamera(toPosition, toTarget, duration = 1100) {
         if (cancelCameraTween) cancelCameraTween();
@@ -400,15 +446,16 @@ export function createCityScene(container, { onSelect } = {}) {
         setSelected(name);
         const target = tower.group.position.clone();
         target.y = tower.height * 0.5;
+        const zoom = homeOffset().length() / HOME_OFFSET.length();
         const direction = camera.position.clone().sub(controls.target).setY(0).normalize();
-        const position = target.clone().addScaledVector(direction, 22);
-        position.y = target.y + 14;
+        const position = target.clone().addScaledVector(direction, 22 * zoom);
+        position.y = target.y + 14 * zoom;
         flyCamera(position, target);
     }
 
     function resetView() {
         setSelected(null);
-        flyCamera(HOME_POSITION.clone(), HOME_TARGET.clone());
+        flyCamera(HOME_TARGET.clone().add(homeOffset()), HOME_TARGET.clone());
         resumeTimer = setTimeout(() => {
             controls.autoRotate = !prefersReducedMotion();
         }, 1200);
@@ -419,7 +466,7 @@ export function createCityScene(container, { onSelect } = {}) {
         const h = container.clientHeight;
         if (!w || !h) return;
         camera.aspect = w / h;
-        camera.updateProjectionMatrix();
+        applyViewInset();
         renderer.setSize(w, h);
         labelRenderer.setSize(w, h);
         composer.setSize(w, h);
@@ -443,6 +490,7 @@ export function createCityScene(container, { onSelect } = {}) {
             }
         }
         tickTweens(now);
+        easeViewInset(dt);
         processHover();
         controls.update();
         composer.render();
@@ -451,5 +499,5 @@ export function createCityScene(container, { onSelect } = {}) {
     }
     requestAnimationFrame(frame);
 
-    return { update, focusOn, resetView, setVisible, setLabelsVisible };
+    return { update, focusOn, resetView, setVisible, setLabelsVisible, setViewInset };
 }

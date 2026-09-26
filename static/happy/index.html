@@ -34,47 +34,54 @@
         <p>Weigh safety, green space, transport, wellbeing, housing access and rent. Every borough re-ranks live.</p>
     </div>
 
-    <div class="center-controls">
-        <nav class="toolbar" aria-label="View options">
-            <div class="seg" role="group" aria-label="Map style">
-                <button type="button" data-mode="city" class="is-on">🏙️ 3D city</button>
-                <button type="button" data-mode="map">🗺️ Map</button>
-                <button type="button" data-mode="neighborhoods">🔬 Neighborhoods</button>
-            </div>
-            <div class="seg" role="group" aria-label="Show boroughs" id="score-filters">
-                <button type="button" data-filter="all" class="is-on">All</button>
-                <button type="button" data-filter="top5">Top 5</button>
-                <button type="button" data-filter="top10">Top 10</button>
-                <button type="button" data-filter="bottom5">Bottom 5</button>
-            </div>
-            <button type="button" class="chip" id="toggle-live" aria-pressed="false">● Live police only</button>
-            <button type="button" class="chip is-on" id="toggle-labels" aria-pressed="true">Labels</button>
-            <button type="button" class="chip is-on" id="toggle-leaderboard" aria-pressed="true">🏆 Leaderboard</button>
-            <select class="chip lsoa-domain" id="lsoa-domain" hidden aria-label="Neighborhood deprivation domain"></select>
-        </nav>
+    <div class="sheet" id="sheet">
+        <button type="button" class="sheet-handle" id="sheet-handle" aria-expanded="false" aria-controls="controls">
+            <span class="sheet-grabber" aria-hidden="true"></span>
+            <span class="sheet-hint">Tune priorities &amp; see the leaderboard</span>
+        </button>
 
-        <div class="search-wrap">
-            <form class="search-bar" id="search-form" role="search" aria-label="Search a postcode, address or borough">
-                <span class="search-icon" aria-hidden="true">🔍</span>
-                <input type="text" id="search-input" class="search-input" placeholder="Search a postcode, address or borough…" autocomplete="off" enterkeyhint="search" aria-label="Postcode, address or borough">
-                <button type="button" class="search-clear" id="search-clear" hidden aria-label="Clear search">✕</button>
-            </form>
-            <div class="search-feedback" id="search-feedback" hidden role="status" aria-live="polite"></div>
+        <div class="center-controls">
+            <nav class="toolbar" aria-label="View options">
+                <div class="seg" role="group" aria-label="Map style">
+                    <button type="button" data-mode="city" class="is-on">🏙️ 3D city</button>
+                    <button type="button" data-mode="map">🗺️ Map</button>
+                    <button type="button" data-mode="neighborhoods">🔬 Neighborhoods</button>
+                </div>
+                <div class="seg" role="group" aria-label="Show boroughs" id="score-filters">
+                    <button type="button" data-filter="all" class="is-on">All</button>
+                    <button type="button" data-filter="top5">Top 5</button>
+                    <button type="button" data-filter="top10">Top 10</button>
+                    <button type="button" data-filter="bottom5">Bottom 5</button>
+                </div>
+                <button type="button" class="chip" id="toggle-live" aria-pressed="false">● Live police only</button>
+                <button type="button" class="chip is-on" id="toggle-labels" aria-pressed="true">Labels</button>
+                <button type="button" class="chip is-on" id="toggle-leaderboard" aria-pressed="true">🏆 Leaderboard</button>
+                <select class="chip lsoa-domain" id="lsoa-domain" hidden aria-label="Neighborhood deprivation domain"></select>
+            </nav>
+
+            <div class="search-wrap">
+                <form class="search-bar" id="search-form" role="search" aria-label="Search a postcode, address or borough">
+                    <span class="search-icon" aria-hidden="true">🔍</span>
+                    <input type="text" id="search-input" class="search-input" placeholder="Search a postcode, address or borough…" autocomplete="off" enterkeyhint="search" aria-label="Postcode, address or borough">
+                    <button type="button" class="search-clear" id="search-clear" hidden aria-label="Clear search">✕</button>
+                </form>
+                <div class="search-feedback" id="search-feedback" hidden role="status" aria-live="polite"></div>
+            </div>
         </div>
+
+        <aside class="panel panel-left" id="controls">
+            <h2 class="panel-title">Your priorities</h2>
+            <p class="panel-sub">Drag to re-rank London instantly</p>
+            <div id="sliders"></div>
+            <div class="sync-status" id="sync-status"></div>
+        </aside>
+
+        <aside class="panel panel-right">
+            <h2 class="panel-title">Leaderboard</h2>
+            <p class="panel-sub" id="leaderboard-sub">Ranked by your priorities</p>
+            <ol class="leaderboard" id="leaderboard"></ol>
+        </aside>
     </div>
-
-    <aside class="panel panel-left" id="controls">
-        <h2 class="panel-title">Your priorities</h2>
-        <p class="panel-sub">Drag to re-rank London instantly</p>
-        <div id="sliders"></div>
-        <div class="sync-status" id="sync-status"></div>
-    </aside>
-
-    <aside class="panel panel-right">
-        <h2 class="panel-title">Leaderboard</h2>
-        <p class="panel-sub" id="leaderboard-sub">Ranked by your priorities</p>
-        <ol class="leaderboard" id="leaderboard"></ol>
-    </aside>
 
     <section class="panel detail-card" id="detail" hidden aria-live="polite">
         <button class="detail-back" id="detail-back" type="button">← Back to overview</button>

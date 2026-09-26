@@ -11,7 +11,7 @@ import {
     setSyncStatus,
     showDetail,
 } from './ui.js';
-import { prefersReducedMotion } from './tween.js';
+import { initSheet } from './sheet.js';
 
 const SCORE_TOLERANCE = 0.1;
 // Same breakpoint as the stacked phone layout in styles.css.
@@ -28,6 +28,7 @@ const state = {
 
 let city = null;
 let flatMap = null;
+let sheet = null;
 
 const FILTERS = {
     all: (ranked) => ranked,
@@ -144,11 +145,8 @@ function selectBorough(name) {
     flatMap.focusOn(name);
     markSelectedRow(name);
     showDetail(state.ranked[rank], rank, { opening: true });
-    // On phones the map is a banner at the top of the page and the detail card
-    // is a bottom sheet, so bring the map back into view to show the fly-to.
-    if (STACKED_LAYOUT_QUERY.matches && window.scrollY > 0) {
-        window.scrollTo({ top: 0, behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
-    }
+    // On phones the detail card replaces the controls sheet over the city.
+    sheet.close();
 }
 
 function clearSelection() {
@@ -196,9 +194,10 @@ async function boot() {
     } catch (err) {
         console.warn('[HappyBorough] 3D scene unavailable, using list-only layout:', err);
         document.body.classList.add('no-webgl');
-        city = { update() {}, focusOn() {}, resetView() {}, setVisible() {}, setLabelsVisible() {} };
+        city = { update() {}, focusOn() {}, resetView() {}, setVisible() {}, setLabelsVisible() {}, setViewInset() {} };
     }
     flatMap = createFlatMap(document.getElementById('flatmap'), { onSelect: selectBorough });
+    sheet = initSheet({ layoutQuery: STACKED_LAYOUT_QUERY, onCoverChange: (px) => city.setViewInset(px) });
     initDomainPicker();
     initToolbar();
     initDetailCard({ onClose: clearSelection });
