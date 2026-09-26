@@ -188,6 +188,61 @@ html, body {
 .slider-row small { color: var(--ink-faint); font-size: 0.7rem; font-weight: 600; margin-left: 2px; }
 .slider-row strong { font-variant-numeric: tabular-nums; color: var(--ink); font-weight: 900; }
 
+.info-wrap { position: relative; display: inline-block; }
+
+.info-icon {
+    display: inline-grid;
+    place-items: center;
+    width: 15px;
+    height: 15px;
+    margin-left: 2px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: rgba(59, 42, 32, 0.1);
+    color: var(--ink-faint);
+    font-size: 0.6rem;
+    font-style: normal;
+    line-height: 1;
+    cursor: pointer;
+    transition: color 0.15s, background 0.15s;
+    vertical-align: middle;
+}
+
+.info-icon:hover,
+.info-icon:focus-visible { color: #fff; background: var(--tube-blue); outline: none; }
+
+.info-tip {
+    position: absolute;
+    z-index: 25;
+    top: 20px;
+    left: 0;
+    width: 220px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: var(--paper-solid);
+    border: 1.5px solid var(--ink);
+    box-shadow: 0 3px 0 rgba(59, 42, 32, 0.18);
+    color: var(--ink-soft);
+    font-size: 0.7rem;
+    font-weight: 600;
+    line-height: 1.4;
+    white-space: normal;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-4px);
+    transition: opacity 0.15s, transform 0.15s, visibility 0.15s;
+    pointer-events: none;
+}
+
+.info-wrap:hover .info-tip,
+.info-wrap:focus-within .info-tip,
+.info-wrap.is-open .info-tip {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
 input[type=range] {
     --fill: 50%;
     width: 100%;

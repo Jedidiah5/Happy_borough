@@ -79,12 +79,40 @@ function escapeHtml(text) {
     return String(text).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 }
 
+function infoIconHtml(f) {
+    if (!f.source) return '';
+    return ` <span class="info-wrap">
+        <button type="button" class="info-icon" aria-label="Data source for ${escapeHtml(f.label)}" aria-expanded="false">ⓘ</button>
+        <span class="info-tip" role="tooltip">${escapeHtml(f.source)}</span>
+    </span>`;
+}
+
 function buildSliders() {
     document.getElementById('sliders').innerHTML = FACTORS.map((f) => `
         <div class="slider-group">
-            <div class="slider-row"><span>${f.icon} ${escapeHtml(f.label)}${f.note ? ` <small>${escapeHtml(f.note)}</small>` : ''}</span><strong id="v-${f.key}"></strong></div>
+            <div class="slider-row"><span>${f.icon} ${escapeHtml(f.label)}${f.note ? ` <small>${escapeHtml(f.note)}</small>` : ''}${infoIconHtml(f)}</span><strong id="v-${f.key}"></strong></div>
             <input type="range" id="w-${f.key}" data-key="${f.key}" min="0" max="100" value="${f.defaultWeight}" aria-label="${escapeHtml(f.label)} weight">
         </div>`).join('');
+
+    for (const btn of document.querySelectorAll('#sliders .info-icon')) {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const wrap = btn.closest('.info-wrap');
+            const isOpen = wrap.classList.contains('is-open');
+            for (const other of document.querySelectorAll('#sliders .info-wrap.is-open')) {
+                other.classList.remove('is-open');
+                other.querySelector('.info-icon').setAttribute('aria-expanded', 'false');
+            }
+            wrap.classList.toggle('is-open', !isOpen);
+            btn.setAttribute('aria-expanded', String(!isOpen));
+        });
+    }
+    document.addEventListener('click', () => {
+        for (const wrap of document.querySelectorAll('#sliders .info-wrap.is-open')) {
+            wrap.classList.remove('is-open');
+            wrap.querySelector('.info-icon').setAttribute('aria-expanded', 'false');
+        }
+    });
 }
 
 function buildDetailBars() {

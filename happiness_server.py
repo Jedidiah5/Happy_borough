@@ -33,29 +33,31 @@ DEPRIVATION_JSON_PATH = os.path.join(os.path.dirname(__file__), 'data', 'depriva
 WELLBEING_JSON_PATH = os.path.join(os.path.dirname(__file__), 'data', 'wellbeing_borough.json')
 RENT_JSON_PATH = os.path.join(os.path.dirname(__file__), 'data', 'rent_borough.json')
 GREENSPACE_JSON_PATH = os.path.join(os.path.dirname(__file__), 'data', 'greenspace_borough.json')
+TRANSPORT_JSON_PATH = os.path.join(os.path.dirname(__file__), 'data', 'transport_borough.json')
 LSOA_GEOJSON_PATH = os.path.join(os.path.dirname(__file__), 'data', 'lsoa_choropleth.json')
 
-# Baseline Police Stats + TfL PTAL benchmarks. Only available for a subset of
-# boroughs (the ones with a hand-curated published figure) -- every other
-# borough is filled in from a London-wide average (see LONDON_AVERAGE),
-# flagged in the API response so the UI can be honest about it. (Real,
-# per-borough ONS well-being data for 32 of 33 boroughs comes from
-# WELLBEING_DATA below instead of this dict -- see build_wellbeing_index.py.
-# Likewise, green_space here is unused -- real per-borough figures for all 33
-# boroughs come from GREENSPACE_DATA instead -- see build_greenspace_index.py.)
+# Baseline Police Stats benchmark. Only available for a subset of boroughs
+# (the ones with a hand-curated published figure) -- every other borough
+# falls back to the IMD Crime domain decile (see build_borough_registry).
+# (Real, per-borough ONS well-being data for 32 of 33 boroughs comes from
+# WELLBEING_DATA below -- see build_wellbeing_index.py. green_space here is
+# unused -- real per-borough figures for all 33 boroughs come from
+# GREENSPACE_DATA instead -- see build_greenspace_index.py. Transport used to
+# live here too as a hand-typed guess, but now comes from TRANSPORT_DATA for
+# all 33 boroughs -- see build_transport_index.py.)
 BOROUGH_HAPPINESS_DATA = {
-    "Richmond upon Thames": {"safety": 8.8, "green_space": 9.4, "transport": 6.8, "lat": 51.4479, "lng": -0.3260},
-    "Wandsworth":           {"safety": 7.8, "green_space": 8.5, "transport": 9.1, "lat": 51.4567, "lng": -0.1910},
-    "Kingston upon Thames": {"safety": 8.6, "green_space": 8.9, "transport": 7.0, "lat": 51.4085, "lng": -0.3064},
-    "Kensington and Chelsea":{"safety": 6.5, "green_space": 8.0, "transport": 9.5, "lat": 51.5020, "lng": -0.1947},
-    "Barnet":               {"safety": 8.0, "green_space": 8.8, "transport": 7.5, "lat": 51.6252, "lng": -0.2000},
-    "Camden":               {"safety": 5.8, "green_space": 8.3, "transport": 9.8, "lat": 51.5290, "lng": -0.1255},
-    "Ealing":               {"safety": 7.2, "green_space": 7.9, "transport": 8.2, "lat": 51.5130, "lng": -0.3089},
-    "Bromley":              {"safety": 8.4, "green_space": 9.2, "transport": 6.5, "lat": 51.4039, "lng": 0.0198},
-    "Hackney":              {"safety": 5.5, "green_space": 7.6, "transport": 9.2, "lat": 51.5450, "lng": -0.0553},
-    "Croydon":              {"safety": 6.8, "green_space": 8.1, "transport": 7.8, "lat": 51.3762, "lng": -0.0982},
-    "Brent":                {"safety": 6.2, "green_space": 7.2, "transport": 8.0, "lat": 51.5588, "lng": -0.2817},
-    "Greenwich":            {"safety": 7.5, "green_space": 8.6, "transport": 7.9, "lat": 51.4892, "lng": 0.0053}
+    "Richmond upon Thames": {"safety": 8.8, "green_space": 9.4, "lat": 51.4479, "lng": -0.3260},
+    "Wandsworth":           {"safety": 7.8, "green_space": 8.5, "lat": 51.4567, "lng": -0.1910},
+    "Kingston upon Thames": {"safety": 8.6, "green_space": 8.9, "lat": 51.4085, "lng": -0.3064},
+    "Kensington and Chelsea":{"safety": 6.5, "green_space": 8.0, "lat": 51.5020, "lng": -0.1947},
+    "Barnet":               {"safety": 8.0, "green_space": 8.8, "lat": 51.6252, "lng": -0.2000},
+    "Camden":               {"safety": 5.8, "green_space": 8.3, "lat": 51.5290, "lng": -0.1255},
+    "Ealing":               {"safety": 7.2, "green_space": 7.9, "lat": 51.5130, "lng": -0.3089},
+    "Bromley":              {"safety": 8.4, "green_space": 9.2, "lat": 51.4039, "lng": 0.0198},
+    "Hackney":              {"safety": 5.5, "green_space": 7.6, "lat": 51.5450, "lng": -0.0553},
+    "Croydon":              {"safety": 6.8, "green_space": 8.1, "lat": 51.3762, "lng": -0.0982},
+    "Brent":                {"safety": 6.2, "green_space": 7.2, "lat": 51.5588, "lng": -0.2817},
+    "Greenwich":            {"safety": 7.5, "green_space": 8.6, "lat": 51.4892, "lng": 0.0053}
 }
 
 # Borough centroid coordinates for every London borough not already listed
@@ -118,6 +120,14 @@ RENT_DATA = load_json_data(RENT_JSON_PATH, "borough rent data")
 # coverage means every borough gets a genuine, sourced figure here.
 GREENSPACE_DATA = load_json_data(GREENSPACE_JSON_PATH, "OS Open Greenspace data")
 
+# Real TfL Public Transport Accessibility Level (PTAL) data for all 33
+# boroughs, population-weighted up from ward level, built by
+# build_transport_index.py from data/tfl_ward_ptal_2023.geojson. Replaces the
+# old approach of hand-typing a 0-10 guess for 12 boroughs and averaging
+# those 12 for the rest -- transport is now sourced exactly like every other
+# metric in this app.
+TRANSPORT_DATA = load_json_data(TRANSPORT_JSON_PATH, "TfL PTAL transport data")
+
 # LSOA-level (neighborhood, ~1,500 people) IMD 2025 choropleth geometry for
 # all 4,994 London small areas, built by build_lsoa_choropleth.py. Read once
 # as raw bytes at startup and served as-is by /api/lsoa-geo -- it's just a
@@ -130,14 +140,15 @@ except Exception as e:
     print(f"⚠️ Could not load LSOA choropleth geometry ({LSOA_GEOJSON_PATH}): {e}")
     LSOA_GEOJSON_BYTES = b'{"type":"FeatureCollection","features":[]}'
 
-# London-wide average of the TfL transport benchmark and of the ONS
-# well-being measures, used as a neutral stand-in for boroughs that don't
-# have their own figure (flagged as "estimated" in the API response so the
-# UI can be honest about it). The City of London's population (~8,000) is
-# too small for ONS to publish a reliable well-being estimate for any
-# measure, so it's the one borough that needs this fallback for happiness.
+# London-wide average of the ONS well-being measures, used as a neutral
+# stand-in for the one borough that doesn't have its own figure (flagged as
+# "estimated" in the API response so the UI can be honest about it). The
+# City of London's population (~8,000) is too small for ONS to publish a
+# reliable well-being estimate for any measure, so it's the one borough that
+# needs this fallback for happiness. (Green space and transport both have
+# real per-borough data for all 33 boroughs now -- GREENSPACE_DATA and
+# TRANSPORT_DATA -- so neither needs a London-average fallback any more.)
 LONDON_AVERAGE = {
-    "transport": round(sum(d["transport"] for d in BOROUGH_HAPPINESS_DATA.values()) / len(BOROUGH_HAPPINESS_DATA), 2),
     "wellbeing": {
         measure: round(sum(v for v in values if v is not None) / len([v for v in values if v is not None]), 2)
         for measure in ("life_satisfaction", "happiness", "worthwhile", "anxiety")
@@ -149,11 +160,12 @@ LONDON_AVERAGE = {
 def build_borough_registry():
     """
     Full 33-borough registry: starts from IMD 2025 coverage (all London
-    boroughs) and layers the curated TfL transport benchmark, real OS Open
-    Greenspace data, real ONS well-being data, and real rent/affordability
-    data on top -- falling back to a flagged London-wide average for the
-    handful of fields (transport, and the City of London's well-being/rent)
-    that don't have a full 33-borough open data source.
+    boroughs) and layers real OS Open Greenspace data, real TfL PTAL
+    transport data, real ONS well-being data, and real rent/affordability
+    data on top -- falling back to a flagged London-wide average only for
+    the City of London's well-being/rent (population too small for ONS to
+    publish). Green space and transport both have a real per-borough figure
+    for all 33 boroughs, so neither needs a fallback any more.
     """
     registry = {}
     for name, dep in DEPRIVATION_DATA.items():
@@ -168,6 +180,7 @@ def build_borough_registry():
             wellbeing = {**LONDON_AVERAGE["wellbeing"], "latest_year": None, "life_satisfaction_range": [None, None], "trend": {}}
         rent = RENT_DATA.get(name, {})
         greenspace = GREENSPACE_DATA.get(name, {})
+        transport = TRANSPORT_DATA.get(name, {})
         registry[name] = {
             "lat": coords["lat"],
             "lng": coords["lng"],
@@ -176,12 +189,12 @@ def build_borough_registry():
             "wellbeing_estimated": wellbeing_estimated,
             "green_space": greenspace.get("green_space_score", 5.0),
             "greenspace": greenspace,
-            "transport": curated["transport"] if curated else LONDON_AVERAGE["transport"],
+            "transport": transport.get("transport_score", 5.0),
+            "transport_detail": transport,
             # Fallback used only if the live Police API call fails: prefer
             # the curated benchmark, otherwise derive one from IMD's Crime
             # domain decile (already on a comparable 1-10, higher-is-safer scale).
             "safety": curated["safety"] if curated else round(crime_decile, 1),
-            "transport_estimated": curated is None,
             "rent": rent,
             "affordability": rent.get("affordability_score", 5.0),
             "deprivation": dep,
@@ -497,7 +510,6 @@ class HappinessHandler(http.server.SimpleHTTPRequestHandler):
                     "borough": b_name,
                     "overall_score": round(score, 1),
                     "ons_happiness": data['happiness'],
-                    "transport_estimated": data['transport_estimated'],
                     "safety_score": safety_score,
                     "safety_source": "live_api" if is_live else "benchmark_fallback",
                     "recent_crimes": crime_count,
@@ -513,6 +525,17 @@ class HappinessHandler(http.server.SimpleHTTPRequestHandler):
                     "housing_approval_rate": housing['approval_rate'],
                     "lat": data['lat'],
                     "lng": data['lng'],
+                    # TfL Public Transport Accessibility Level (PTAL), real
+                    # per-borough figure for all 33 boroughs, population-
+                    # weighted up from ward level (see
+                    # build_transport_index.py). transport_score above is
+                    # this rescaled 0-10 across the 33 boroughs; mean_ai is
+                    # the raw, unbounded Accessibility Index it's derived
+                    # from, and ptal_band is TfL's official 0/1a-6b banding.
+                    "transport": {
+                        "mean_accessibility_index": data['transport_detail'].get('mean_accessibility_index'),
+                        "ptal_band": data['transport_detail'].get('ptal_band'),
+                    },
                     # Official ONS Personal Well-being Survey, real per-borough
                     # figures for every one of London's 33 boroughs (see
                     # build_wellbeing_index.py). All four measures are 0-10;

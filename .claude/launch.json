@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "happyborough",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["happiness_server.py"],
+      "port": 8085,
+      "autoPort": true
+    }
+  ]
+}
