@@ -25,6 +25,28 @@
         <div class="badge">🛡️ Live UK Police API + ONS Data Fusion</div>
     </header>
 
+    <aside class="panel panel-left" id="controls">
+        <h2 class="panel-title">Your priorities</h2>
+        <p class="panel-sub">Drag to re-rank London instantly</p>
+        <div class="slider-group">
+            <div class="slider-row"><span>🛡️ Safety <small>live police data</small></span><strong id="v-safety">30%</strong></div>
+            <input type="range" id="w-safety" data-key="safety" min="0" max="100" value="30">
+        </div>
+        <div class="slider-group">
+            <div class="slider-row"><span>🌳 Parks &amp; green space</span><strong id="v-green">30%</strong></div>
+            <input type="range" id="w-green" data-key="green" min="0" max="100" value="30">
+        </div>
+        <div class="slider-group">
+            <div class="slider-row"><span>🚆 Transport access</span><strong id="v-transport">20%</strong></div>
+            <input type="range" id="w-transport" data-key="transport" min="0" max="100" value="20">
+        </div>
+        <div class="slider-group">
+            <div class="slider-row"><span>😊 ONS happiness</span><strong id="v-happiness">20%</strong></div>
+            <input type="range" id="w-happiness" data-key="happiness" min="0" max="100" value="20">
+        </div>
+        <div class="sync-status" id="sync-status"></div>
+    </aside>
+
     <div id="loading" class="loading">
         <div class="spinner"></div>
         <div>Fetching live police &amp; planning data…</div>
