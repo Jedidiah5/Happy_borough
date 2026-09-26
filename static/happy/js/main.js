@@ -1,4 +1,5 @@
 import { createCityScene } from './scene.js';
+import { createFlatMap } from './flatMap.js';
 import { FACTORS, computeScore, rankBoroughs } from './scoring.js';
 import {
     hideDetail,
@@ -18,9 +19,78 @@ const state = {
     ranked: [],
     selected: null,
     requestId: 0,
+    view: { mode: 'city', filter: 'all', liveOnly: false },
 };
 
 let city = null;
+let flatMap = null;
+
+const FILTERS = {
+    all: (ranked) => ranked,
+    top5: (ranked) => ranked.slice(0, 5),
+    top10: (ranked) => ranked.slice(0, 10),
+    bottom5: (ranked) => ranked.slice(-5),
+};
+
+function visibleSet() {
+    const { filter, liveOnly } = state.view;
+    if (filter === 'all' && !liveOnly) return null;
+    const pool = liveOnly ? state.ranked.filter((b) => b.safety_source === 'live_api') : state.ranked;
+    return new Set(FILTERS[filter](pool).map((b) => b.borough));
+}
+
+function applyView() {
+    const visible = visibleSet();
+    city.setVisible(visible);
+    flatMap.update(state.ranked, visible);
+    for (const row of document.querySelectorAll('.lb-row')) {
+        row.classList.toggle('is-filtered', !!visible && !visible.has(row.dataset.borough));
+    }
+}
+
+function setPressed(button, on) {
+    button.classList.toggle('is-on', on);
+    button.setAttribute('aria-pressed', String(on));
+}
+
+function initToolbar() {
+    const toolbar = document.querySelector('.toolbar');
+    for (const btn of toolbar.querySelectorAll('[data-mode]')) {
+        btn.addEventListener('click', () => {
+            state.view.mode = btn.dataset.mode;
+            toolbar.querySelectorAll('[data-mode]').forEach((b) => b.classList.toggle('is-on', b === btn));
+            const isMap = state.view.mode === 'map';
+            document.body.classList.toggle('mode-map', isMap);
+            document.getElementById('flatmap').hidden = !isMap;
+            if (isMap) flatMap.show();
+        });
+    }
+    for (const btn of toolbar.querySelectorAll('[data-filter]')) {
+        btn.addEventListener('click', () => {
+            state.view.filter = btn.dataset.filter;
+            toolbar.querySelectorAll('[data-filter]').forEach((b) => b.classList.toggle('is-on', b === btn));
+            applyView();
+        });
+    }
+    const live = document.getElementById('toggle-live');
+    live.addEventListener('click', () => {
+        state.view.liveOnly = !state.view.liveOnly;
+        setPressed(live, state.view.liveOnly);
+        applyView();
+    });
+    const labels = document.getElementById('toggle-labels');
+    labels.addEventListener('click', () => {
+        const on = !labels.classList.contains('is-on');
+        setPressed(labels, on);
+        city.setLabelsVisible(on);
+    });
+    const board = document.getElementById('toggle-leaderboard');
+    board.addEventListener('click', () => {
+        const on = !board.classList.contains('is-on');
+        setPressed(board, on);
+        document.body.classList.toggle('leaderboard-hidden', !on);
+    });
+}
 
 async function fetchRankings(weights) {
     const query = new URLSearchParams(FACTORS.map((f) => [f.param, weights[f.key]]));
@@ -34,6 +104,7 @@ function render(options) {
     city.update(state.ranked, options);
     renderLeaderboard(state.ranked, { onSelect: selectBorough });
     markSelectedRow(state.selected);
+    applyView();
     if (state.selected) {
         const rank = state.ranked.findIndex((b) => b.borough === state.selected);
         if (rank >= 0) showDetail(state.ranked[rank], rank);
@@ -45,6 +116,7 @@ function selectBorough(name) {
     if (rank < 0) return;
     state.selected = name;
     city.focusOn(name);
+    flatMap.focusOn(name);
     markSelectedRow(name);
     showDetail(state.ranked[rank], rank, { opening: true });
 }
@@ -54,6 +126,7 @@ function clearSelection() {
     markSelectedRow(null);
     hideDetail();
     city.resetView();
+    flatMap.resetView();
 }
 
 function checkAgainstServer(serverRanked, weights) {
@@ -93,8 +166,10 @@ async function boot() {
     } catch (err) {
         console.warn('[HappyBorough] 3D scene unavailable, using list-only layout:', err);
         document.body.classList.add('no-webgl');
-        city = { update() {}, focusOn() {}, resetView() {} };
+        city = { update() {}, focusOn() {}, resetView() {}, setVisible() {}, setLabelsVisible() {} };
     }
+    flatMap = createFlatMap(document.getElementById('flatmap'), { onSelect: selectBorough });
+    initToolbar();
     initDetailCard({ onClose: clearSelection });
     state.weights = initSliders({
         onInput: (weights) => {
